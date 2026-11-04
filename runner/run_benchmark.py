@@ -9,11 +9,35 @@ Worker = Path("slicer_worker.py").resolve()
 
 def main(path="tasks/tasks.json"):
     tasks = load_tasks(path)
-        
+    for task in tasks:
+        print(f"{task['id']}: {task['prompt']}")
+
+        # store task details in JSON strings in an environment variable
+        # worker converts it back to a dictionary(can't pass dict only string
+        # in env varible)
+        env = os.environ.copy()
+        env["SLICER_BENCH_TASK_JSON"] = json.dumps(task)
+
+        try:
+            result = subprocess.run(
+                [
+                    Slicer,
+                    "--no-splash",
+                    "--no-main-window",
+                    "--python-script",
+                    str(Worker),
+                ],
+                env=env,
+                timeout=300,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            print(f"Timeout while running {task['id']}")
+
 
 def load_tasks(path):
-    with open(path) as task_json:
-        data = json.load(task_json)
-        print(data)
-    
+    with open(path, encoding="utf-8") as task_json:
+        return json.load(task_json)
+
+  
 main()
