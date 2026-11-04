@@ -26,7 +26,7 @@ def main():
 
     # create event loop so this script can wait while slicey works
     # slices sends the model request and processes the response async
-    loop = qt.eventLoop()
+    loop = qt.QEventLoop()
     finished = {"value": False}
 
     # keep slicey's existing event handler(which updates its UI), then
@@ -47,7 +47,7 @@ def main():
 
     # schedule the prompt after the event loop starts so it can receive
     # slicey's completion event while the request is running
-    qt.QTimer.singleshot(0, lambda: logic.sendUserMessage(task["prompt"]))
+    qt.QTimer.singleShot(0, lambda: logic.sendUserMessage(task["prompt"]))
     loop.exec_()  # wait here until slicey finishes
     logic.onEvent = prev_handler  # restore slicey's original event handler
 
