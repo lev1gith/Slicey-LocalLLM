@@ -7,7 +7,7 @@ Slicer = "/Applications/Slicer.app/Contents/MacOS/Slicer"
 Worker = Path("slicer_worker.py").resolve()
 
 
-def main(path="tasks/tasks.json"):
+def main(model, path="tasks/tasks.json"):
     tasks = load_tasks(path)
     for task in tasks:
         print(f"{task['id']}: {task['prompt']}")
@@ -17,6 +17,7 @@ def main(path="tasks/tasks.json"):
         # in env varible)
         env = os.environ.copy()
         env["SLICER_BENCH_TASK_JSON"] = json.dumps(task)
+        env["SLICER_BENCH_MODEL"] = model
 
         try:
             result = subprocess.run(
@@ -39,5 +40,5 @@ def load_tasks(path):
     with open(path, encoding="utf-8") as task_json:
         return json.load(task_json)
 
-  
-main()
+
+main(model="qwen3-5-4b")
