@@ -3,8 +3,9 @@ import os
 import slicer
 import qt
 
+
 def main():
-    # task
+    # load env variables
     task = json.loads(os.environ["SLICER_BENCH_TASK_JSON"])
     model_name = os.environ["SLICER_BENCH_MODEL"]
 
@@ -37,7 +38,7 @@ def main():
         if prev_handler:
             prev_handler(event, payload)
 
-        # slicey emits "turn_finishes when it completed the request"
+        # slicey emits "turn_finished" when it completed the request
         # and any tool calls for this turn
         if event == "turn_finished":
             finished["value"] = True
@@ -52,5 +53,6 @@ def main():
     logic.onEvent = prev_handler  # restore slicey's original event handler
 
     # check result
+
 
 main()
