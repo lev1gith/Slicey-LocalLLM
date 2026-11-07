@@ -1,0 +1,11 @@
+[
+    {
+        "id": "load MRHead sample data",
+        "prompt": "Load the sample data called MRHead"
+    },
+    {
+        "id": "load CTChest sample data",
+        "prompt": "Load the sample data called CTChest"
+    }
+
+]
