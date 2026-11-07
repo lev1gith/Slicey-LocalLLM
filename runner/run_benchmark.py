@@ -2,9 +2,11 @@ import json
 import os
 import subprocess
 from pathlib import Path
+import requests
 
-Slicer = "/Applications/Slicer.app/Contents/MacOS/Slicer"
-Worker = Path("slicer_worker.py").resolve()
+Slicer = "/Applications/3D Slicer 5.13.0 2026-10-30.app/Contents/MacOS/SlicerApp-real"
+RUNNER_DIR = Path(__file__).resolve().parent
+Worker = RUNNER_DIR / "slicer_worker.py"
 
 
 def main(model, path="tasks/tasks.json"):
@@ -19,22 +21,21 @@ def main(model, path="tasks/tasks.json"):
         env["SLICER_BENCH_TASK_JSON"] = json.dumps(task)
         env["SLICER_BENCH_MODEL"] = model
 
-        try:
-            result = subprocess.run(
-                [
-                    Slicer,
-                    "--no-splash",
-                    "--no-main-window",
-                    "--python-script",
-                    str(Worker),
-                ],
-                env=env,
-                timeout=300,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
-            print(f"Timeout while running {task['id']}")
+        # body of POST
+        code = (
+            "import os, runpy\n"
+            f"os.environ['SLICER_BENCH_TASK_JSON'] = {json.dumps(task)!r}\n"
+            f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
+            f"runpy.run_path({str(Worker)!r}, run_name='__main__')\n"
+        )
 
+        response = requests.post(
+            "http://localhost:2016/slicer/exec",
+            data=code,
+            timeout=300,
+        )
+        response.raise_for_status()
+        print(response.text)
 
 def load_tasks(path):
     with open(path, encoding="utf-8") as task_json:
