@@ -10,7 +10,7 @@ Worker = RUNNER_DIR / "slicer_worker.py"
 
 def main(model, input_format, path):
     if input_format == "json":
-        tasks = load_tasks(path)
+        tasks = load_json_tasks(path)
     elif input_format == "md":
         tasks = parse_md(path)
     else:
@@ -43,7 +43,7 @@ def main(model, input_format, path):
         print(response.text)
 
 
-def load_tasks(path):
+def load_json_tasks(path):
     with open(path, encoding="utf-8") as task_json:
         return json.load(task_json)
 
