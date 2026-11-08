@@ -11,7 +11,7 @@ These 40 tasks are candidates for the benchmark. Each should start from a docume
 5. **Load a surface model** — The model node exists and contains non-empty polydata.
 6. **Load markups from JSON** — The markup node has the expected type and control-point count.
 7. **Summarize the scene** — A report lists the expected nodes, node types, and names.
-8. **Organize nodes in a folder** — The requested subject-hierarchy folder exists and contains the specified nodes.
+8. **Load MRhead sample data** — Load the sample data MRHead.
 
 ## Create and edit segmentations
 
