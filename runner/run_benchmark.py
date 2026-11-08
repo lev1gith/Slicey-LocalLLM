@@ -82,4 +82,4 @@ def parse_md(path):
     return tasks
 
 
-main(model="qwen3-5-4b", input_format="md", path="tasks/tasks.json")
+main(model="qwen3-5-4b", input_format="md", path="tasks/task_prompts.md")
