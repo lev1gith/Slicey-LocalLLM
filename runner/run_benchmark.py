@@ -1,6 +1,5 @@
 import json
 import os
-import subprocess
 from pathlib import Path
 import requests
 
@@ -9,8 +8,14 @@ RUNNER_DIR = Path(__file__).resolve().parent
 Worker = RUNNER_DIR / "slicer_worker.py"
 
 
-def main(model, path="tasks/tasks.json"):
-    tasks = load_tasks(path)
+def main(model, input_format, path):
+    if input_format == "json":
+        tasks = load_tasks(path)
+    elif input_format == "md":
+        tasks = parse_md(path)
+    else:
+        raise ValueError("Unsupported format")
+
     for task in tasks:
         print(f"{task['id']}: {task['prompt']}")
 
@@ -37,9 +42,44 @@ def main(model, path="tasks/tasks.json"):
         response.raise_for_status()
         print(response.text)
 
+
 def load_tasks(path):
     with open(path, encoding="utf-8") as task_json:
         return json.load(task_json)
 
 
-main(model="qwen3-5-4b")
+def parse_md(path):
+    text = Path(path).read_text(encoding="utf-8")
+    tasks = []
+    curr = None
+
+    def flush(task):
+        if task is None:
+            return
+        prompt = "\n".join(task["lines"]).strip()
+        if not prompt:
+            raise ValueError(f"Task {task['id']} has empty prompt")
+        tasks.append({"id": task["id"], "prompt": prompt})
+
+    for line in text.splitlines():
+        if line.startswith("### "):
+            flush(curr)
+            heading = line[4:].strip()
+            if " — " not in heading:
+                raise ValueError("Bad task heading")
+            task_id, _title = heading.split(" — ", maxsplit=1)
+            curr = {"id": task_id.strip(), "lines": []}
+        elif curr is not None:
+            curr["lines"].append(line)
+    flush(curr)  # last task
+
+    ids = [t["id"] for t in tasks]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Duplicate task ids in markdown file")
+
+    if not tasks:
+        raise ValueError(f"No tasks found in {path}")
+    return tasks
+
+
+main(model="qwen3-5-4b", input_format="md", path="tasks/tasks.json")
