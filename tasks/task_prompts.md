@@ -1,5 +1,3 @@
-## Load and organize data
-
 ### 01 — Load a NRRD volume
 Load the volume from `{fixture_path}` into the scene. Name the volume `{volume_name}`. Do not load any other data.
 
@@ -23,8 +21,6 @@ Create a concise scene summary at `{output_path}`. For every node in the scene, 
 
 ### 08 — Load MRHead sample data
 Use Slicer's Sample Data module to download and load the sample data named `MRHead`. Name the resulting volume `MRHead`.
-
-## Create and edit segmentations
 
 ### 09 — Create a segmentation for a volume
 Create a segmentation node named `{segmentation_name}` using `{volume_name}` as its source volume. Ensure the segmentation uses the source volume's geometry.
@@ -56,8 +52,6 @@ Load labelmap `{fixture_path}` and create a segmentation named `{segmentation_na
 ### 18 — Create a closed surface from a segment
 Create a closed-surface representation for segment `{segment_name}` in segmentation `{segmentation_name}`.
 
-## Measure and annotate
-
 ### 19 — Place a markup point
 Create a markups point list named `{markup_name}` with one point at RAS coordinate ({ras_x}, {ras_y}, {ras_z}) mm.
 
@@ -78,8 +72,6 @@ For segment `{segment_name}` in segmentation `{segmentation_name}`, compute its 
 
 ### 25 — Measure a segment's volume
 Measure the volume of segment `{segment_name}` in segmentation `{segmentation_name}` and save the result in a table named `{table_name}`.
-
-## Configure views and display
 
 ### 26 — Set the four-up layout
 Set the Slicer layout to `{layout_name}`, the four-view arrangement containing the Red, Yellow, Green, and 3D views.
@@ -104,8 +96,6 @@ For model `{model_name}`, set its display color to `{color_rgb}` (RGB values fro
 
 ### 33 — Enable volume rendering
 Enable volume rendering for volume `{volume_name}` and make the rendered volume visible in the 3D view.
-
-## Save and export results
 
 ### 34 — Save the full scene as MRB
 Save the complete scene as a Slicer bundle at `{output_path}`.
