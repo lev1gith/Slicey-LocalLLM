@@ -1,8 +1,8 @@
 ### 01 — Load a NRRD volume
-Load the volume from `{fixture_path}` into the scene. Name the volume `{volume_name}`. Do not load any other data.
+Load the volume from `{/Users/leventel/Desktop/personalCode/slicey_proj/test_files}` into the scene. Name the volume `{MRHead nrrd load}`. Do not load any other data.
 
 ### 02 — Load a NIfTI volume
-Load the volume from `{fixture_path}` into the scene. Name the volume `{volume_name}`. Do not load any other data.
+Load the volume from `{/Users/leventel/Desktop/personalCode/slicey_proj/test_files}` into the scene. Name the volume `{Brain nifty}`. Do not load any other data.
 
 ### 03 — Import a DICOM series
 Import the DICOM series in `{dicom_directory}` and load the series identified as `{series_description}` (series UID: `{series_uid}`) as a volume named `{volume_name}`.
