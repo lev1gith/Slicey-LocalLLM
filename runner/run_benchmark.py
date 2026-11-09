@@ -10,6 +10,7 @@ RUNNER_DIR = Path(__file__).resolve().parent
 Worker = RUNNER_DIR / "slicer_worker.py"
 Result_dir = RUNNER_DIR.parent / "results"
 
+
 def main(model, input_format, path):
     if input_format == "json":
         tasks = load_json_tasks(path)
@@ -28,11 +29,13 @@ def main(model, input_format, path):
         # worker converts it back to a dictionary(can't pass dict only string
         # in env varible)
         # body of POST
+        # Slicer's /slicer/exec returns the value of __execResult as JSON
+        # (printed output is not returned), so pass the worker's RESULT there
         code = (
             "import os, runpy\n"
             f"os.environ['SLICER_BENCH_TASK_JSON'] = {json.dumps(task)!r}\n"
             f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
-            f"runpy.run_path({str(Worker)!r}, run_name='__main__')\n"
+            f"__execResult = runpy.run_path({str(Worker)!r}, run_name='__main__')['RESULT']\n"
         )
         start = time.perf_counter()
         try:
@@ -42,15 +45,24 @@ def main(model, input_format, path):
                 timeout=300,
             )
             response.raise_for_status()
-            print(response.text)
         except requests.exceptions.RequestException as e:
             record = {"outcome": "request_error", "reason": str(e)}
         else:
-            record = parse_result(response.text) or {
-                "outcome": "code_error",
-                "reason": "worker printed no RESULT line",
-                "raw": response.text[-500:],
-            }
+            try:
+                record = response.json()
+            except ValueError:
+                record = {
+                    "outcome": "code_error",
+                    "reason": "non-JSON response",
+                    "raw": response.text[-500:],
+                }
+            if not isinstance(record, dict) or not record:
+                # {} means __execResult was never set by the worker
+                record = {
+                    "outcome": "code_error",
+                    "reason": "worker returned no result",
+                    "raw": response.text[-500:],
+                }
         wall_s = round(time.perf_counter() - start, 2)
         record["task_id"] = task["id"]
         record["wall_s"] = wall_s
@@ -60,18 +72,6 @@ def main(model, input_format, path):
 
         print(f"  -> {record['outcome']}: {record.get('reason', '')} ({wall_s}s)", flush=True)
         append_record(run_dir, record)
-
-
-def parse_result(text):
-    # worker prints one "RESULT:{json}" line; take the last one in case
-    # earlier output contains other prints
-    for line in reversed(text.splitlines()):
-        if line.startswith("RESULT:"):
-            try:
-                return json.loads(line[len("RESULT:"):])
-            except json.JSONDecodeError:
-                return None
-    return None
 
 
 def append_record(run_dir, record):
