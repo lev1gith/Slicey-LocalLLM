@@ -25,6 +25,7 @@ def main():
 
     combo.setCurrentText(model_name)
     logic = widget.logic
+    logic.resetConversation()
 
     # create event loop so this script can wait while slicey works
     # slices sends the model request and processes the response async
