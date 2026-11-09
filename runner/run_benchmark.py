@@ -8,7 +8,7 @@ from datetime import datetime
 Slicer = "/Applications/3D Slicer 5.13.0 2026-10-30.app/Contents/MacOS/SlicerApp-real"
 RUNNER_DIR = Path(__file__).resolve().parent
 Worker = RUNNER_DIR / "slicer_worker.py"
-
+Result_dir = RUNNER_DIR.parent / "results"
 
 def main(model, input_format, path):
     if input_format == "json":
@@ -82,7 +82,7 @@ def append_record(run_dir, record):
 
 def new_run_dir():
     run_id = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-    run_dir = RUNNER_DIR / "results" / run_id
+    run_dir = Result_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_id, run_dir
 
