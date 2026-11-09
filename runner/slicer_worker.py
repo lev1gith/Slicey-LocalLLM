@@ -10,7 +10,6 @@ def main():
     task = json.loads(os.environ["SLICER_BENCH_TASK_JSON"])
     model_name = os.environ["SLICER_BENCH_MODEL"]
 
-
     # start run with empty scene
     # initialize slicey and get its logic object
     slicer.mrmlScene.Clear(0)
@@ -61,7 +60,7 @@ def main():
     timer.start(timeout * 1000)
     try:
         logic.onEvent = on_event
-        if logic._busy:
+        if logic._busy:  # make sure not to have task leaks
             raise RuntimeError("Slicey still busy from previous task")
         qt.QTimer.singleShot(0, lambda: logic.sendUserMessage(task["prompt"]))
         # schedule the prompt after the event loop starts so it can receive
