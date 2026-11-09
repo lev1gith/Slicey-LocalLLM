@@ -58,9 +58,11 @@ def main():
             loop.quit()
 
     start = time.perf_counter()
+    timer.start(timeout * 1000)
     try:
         logic.onEvent = on_event
-        timer.start(timeout * 1000)
+        if logic._busy:
+            raise RuntimeError("Slicey still busy from previous task")
         qt.QTimer.singleShot(0, lambda: logic.sendUserMessage(task["prompt"]))
         # schedule the prompt after the event loop starts so it can receive
         # slicey's completion event while the request is running
@@ -71,7 +73,12 @@ def main():
     llm_s = time.perf_counter() - start  # time from sending prompt until loop ends
 
     if finished["timed_out"]:
-        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s"}
+        logic.cancel()
+        deadline = time.perf_counter() + 20
+        while logic._busy and time.perf_counter() < deadline:
+            slicer.app.processEvents()
+            time.sleep(0.05)
+        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy}
     else:
         result = {"outcome": "finished", "reason": f"turn finished"}  # add checker later here
     result["llm_s"] = round(llm_s, 2)
