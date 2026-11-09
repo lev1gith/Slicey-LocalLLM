@@ -2,6 +2,7 @@ import json
 import os
 import slicer
 import qt
+import time
 
 
 def main():
@@ -55,6 +56,7 @@ def main():
             finished["value"] = True
             loop.quit()
 
+    start = time.perf_counter()
     try:
         logic.onEvent = on_event
         timer.start(timeout * 1000)
@@ -65,8 +67,14 @@ def main():
     finally:
         logic.onEvent = prev_handler  # restore slicey's original event handler
         timer.stop()
+    llm_s = time.perf_counter() - start  # time from sending prompt until loop ends
 
-    # check result
+    if finished["timed_out"]:
+        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s"}
+    else:
+        result = {"outcome": "finished", "reason": f"turn finished"}  # add checker later here
+    result["llm_s"] = round(llm_s, 2)
+    print("result: " + json.dumps(result))
 
 
 main()
