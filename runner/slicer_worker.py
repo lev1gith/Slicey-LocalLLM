@@ -27,8 +27,19 @@ def main():
 
     # create event loop so this script can wait while slicey works
     # slices sends the model request and processes the response async
+    timeout = 150
     loop = qt.QEventLoop()
-    finished = {"value": False}
+    finished = {"value": False, "timed_out": False}
+
+    timer = qt.QTimer()
+    timer.setSingleShot(True)
+
+    def on_timeout():
+        finished["timed_out"] = True
+        loop.quit()
+
+    timer.timeout.connect(on_timeout)
+    timer.start(timeout * 1000)
 
     # keep slicey's existing event handler(which updates its UI), then
     # add a seperate handler to detect when the task is finished
@@ -51,6 +62,7 @@ def main():
     qt.QTimer.singleShot(0, lambda: logic.sendUserMessage(task["prompt"]))
     loop.exec_()  # wait here until slicey finishes
     logic.onEvent = prev_handler  # restore slicey's original event handler
+    timer.stop()
 
     # check result
 
