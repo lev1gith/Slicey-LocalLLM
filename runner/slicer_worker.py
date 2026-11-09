@@ -74,7 +74,16 @@ def main():
     else:
         result = {"outcome": "finished", "reason": f"turn finished"}  # add checker later here
     result["llm_s"] = round(llm_s, 2)
-    print("result: " + json.dumps(result))
+    return result
 
 
-main()
+def run():
+    # RESULT is sent back to the runner via __execResult, so turn worker
+    # exceptions (e.g. model not listed) into a record instead of crashing
+    try:
+        return main()
+    except Exception as e:
+        return {"outcome": "worker_error", "reason": repr(e)}
+
+
+RESULT = run()
