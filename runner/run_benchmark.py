@@ -2,6 +2,8 @@ import json
 import os
 from pathlib import Path
 import requests
+import time
+from datetime import datetime
 
 Slicer = "/Applications/3D Slicer 5.13.0 2026-10-30.app/Contents/MacOS/SlicerApp-real"
 RUNNER_DIR = Path(__file__).resolve().parent
@@ -16,6 +18,9 @@ def main(model, input_format, path):
     else:
         raise ValueError("Unsupported format")
 
+    run_id, run_dir = new_run_dir()
+    print(f"Run {run_id} -> {run_dir}", flush=True)
+
     for task in tasks:
         print(f"{task['id']}: {task['prompt']}")
 
@@ -29,6 +34,7 @@ def main(model, input_format, path):
             f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
             f"runpy.run_path({str(Worker)!r}, run_name='__main__')\n"
         )
+        start = time.perf_counter()
         try:
             response = requests.post(
                 "http://localhost:2016/slicer/exec",
@@ -38,7 +44,47 @@ def main(model, input_format, path):
             response.raise_for_status()
             print(response.text)
         except requests.exceptions.RequestException as e:
-            print(e)
+            record = {"outcome": "request_error", "reason": str(e)}
+        else:
+            record = parse_result(response.text) or {
+                "outcome": "code_error",
+                "reason": "worker printed no RESULT line",
+                "raw": response.text[-500:],
+            }
+        wall_s = round(time.perf_counter() - start, 2)
+        record["task_id"] = task["id"]
+        record["wall_s"] = wall_s
+        record["run_id"] = run_id
+        record["model"] = model
+        record["timestamp"] = datetime.now().isoformat(timespec="seconds")
+
+        print(f"  -> {record['outcome']}: {record.get('reason', '')} ({wall_s}s)", flush=True)
+        append_record(run_dir, record)
+
+
+def parse_result(text):
+    # worker prints one "RESULT:{json}" line; take the last one in case
+    # earlier output contains other prints
+    for line in reversed(text.splitlines()):
+        if line.startswith("RESULT:"):
+            try:
+                return json.loads(line[len("RESULT:"):])
+            except json.JSONDecodeError:
+                return None
+    return None
+
+
+def append_record(run_dir, record):
+    # open, write one line, close: each task is on disk before the next starts
+    with open(run_dir / "results.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def new_run_dir():
+    run_id = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    run_dir = RUNNER_DIR / "results" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    return run_id, run_dir
 
 
 def load_json_tasks(path):
