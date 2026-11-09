@@ -36,10 +36,10 @@ def main():
 
     def on_timeout():
         finished["timed_out"] = True
+        print(f"Task: {task['id']} timed out")
         loop.quit()
 
     timer.timeout.connect(on_timeout)
-    timer.start(timeout * 1000)
 
     # keep slicey's existing event handler(which updates its UI), then
     # add a seperate handler to detect when the task is finished
@@ -55,14 +55,16 @@ def main():
             finished["value"] = True
             loop.quit()
 
-    logic.onEvent = on_event
-
-    # schedule the prompt after the event loop starts so it can receive
-    # slicey's completion event while the request is running
-    qt.QTimer.singleShot(0, lambda: logic.sendUserMessage(task["prompt"]))
-    loop.exec_()  # wait here until slicey finishes
-    logic.onEvent = prev_handler  # restore slicey's original event handler
-    timer.stop()
+    try:
+        logic.onEvent = on_event
+        timer.start(timeout * 1000)
+        qt.QTimer.singleShot(0, lambda: logic.sendUserMessage(task["prompt"]))
+        # schedule the prompt after the event loop starts so it can receive
+        # slicey's completion event while the request is running
+        loop.exec_()  # wait here until slicey finishes
+    finally:
+        logic.onEvent = prev_handler  # restore slicey's original event handler
+        timer.stop()
 
     # check result
 
