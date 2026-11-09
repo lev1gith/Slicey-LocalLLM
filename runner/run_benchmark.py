@@ -22,10 +22,6 @@ def main(model, input_format, path):
         # store task details in JSON strings in an environment variable
         # worker converts it back to a dictionary(can't pass dict only string
         # in env varible)
-        env = os.environ.copy()
-        env["SLICER_BENCH_TASK_JSON"] = json.dumps(task)
-        env["SLICER_BENCH_MODEL"] = model
-
         # body of POST
         code = (
             "import os, runpy\n"
@@ -33,14 +29,16 @@ def main(model, input_format, path):
             f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
             f"runpy.run_path({str(Worker)!r}, run_name='__main__')\n"
         )
-
-        response = requests.post(
-            "http://localhost:2016/slicer/exec",
-            data=code,
-            timeout=300,
-        )
-        response.raise_for_status()
-        print(response.text)
+        try:
+            response = requests.post(
+                "http://localhost:2016/slicer/exec",
+                data=code,
+                timeout=300,
+            )
+            response.raise_for_status()
+            print(response.text)
+        except requests.exceptions.RequestException as e:
+            print(e)
 
 
 def load_json_tasks(path):
@@ -82,4 +80,5 @@ def parse_md(path):
     return tasks
 
 
-main(model="qwen3-5-4b", input_format="md", path="tasks/task_prompts.md")
+if __name__ == "__main__":
+    main(model="qwen3-5-4b", input_format="md", path="tasks/task_prompts.md")
