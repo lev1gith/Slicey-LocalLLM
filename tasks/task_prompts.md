@@ -1,119 +1,119 @@
 ### 01 — Load a NRRD volume
-Load the volume from `{/Users/leventel/Desktop/personalCode/slicey_proj/test_files}` into the scene. Name the volume `{MRHead nrrd load}`. Do not load any other data.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/MRHead.nrrd` into the scene as a volume named `MRHead NRRD`. Do not load any other data.
 
 ### 02 — Load a NIfTI volume
-Load the volume from `{/Users/leventel/Desktop/personalCode/slicey_proj/test_files}` into the scene. Name the volume `{Brain nifty}`. Do not load any other data.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/brain.nii.gz` into the scene as a volume named `Brain NIfTI`. Do not load any other data.
 
 ### 03 — Import a DICOM series
-Import the DICOM series in `{dicom_directory}` and load the series identified as `{series_description}` (series UID: `{series_uid}`) as a volume named `{volume_name}`.
+Import the DICOM series from `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/dicom_series` and load the series whose description is `Synthetic Test CT` as a volume named `Synthetic DICOM CT`.
 
 ### 04 — Load a saved segmentation
-Load the segmentation from `{fixture_path}` into the scene and name it `{segmentation_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` into the scene as a segmentation named `Island Segmentation`.
 
 ### 05 — Load a surface model
-Load the surface model from `{fixture_path}` into the scene and name it `{model_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/sphere_model.stl` into the scene as a model named `Benchmark Sphere`.
 
 ### 06 — Load markups from JSON
-Load the markup file `{fixture_path}` into the scene. Name the markup node `{markup_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/fiducials.mrk.json` into the scene as a markup node named `Benchmark Fiducials`.
 
 ### 07 — Summarize the scene
-Create a concise scene summary at `{output_path}`. For every node in the scene, include its name and node type. Include these expected nodes: `{expected_nodes}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`, `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`, `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/sphere_model.stl` as `Benchmark Sphere`, and `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/fiducials.mrk.json` as `Benchmark Fiducials`. Write a concise scene summary to `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/scene_summary.txt`, listing every node's name and node type. Include the four named nodes above.
 
 ### 08 — Load MRHead sample data
 Use Slicer's Sample Data module to download and load the sample data named `MRHead`. Name the resulting volume `MRHead`.
 
 ### 09 — Create a segmentation for a volume
-Create a segmentation node named `{segmentation_name}` using `{volume_name}` as its source volume. Ensure the segmentation uses the source volume's geometry.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`. Create a segmentation named `Organ Segmentation` using `Benchmark CT` as its source volume, with the same geometry.
 
 ### 10 — Add a named segment
-In segmentation `{segmentation_name}`, add an empty segment named `{segment_name}` with color `{color_rgb}` (RGB values from 0 to 1).
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`. Create a segmentation named `Named Segment Test` using that volume's geometry, then add an empty segment named `Target Region` with RGB color (0.2, 0.7, 0.3).
 
 ### 11 — Threshold a CT volume
-In volume `{volume_name}`, create a segment named `{segment_name}` containing voxels with intensity from `{lower_threshold}` through `{upper_threshold}`. Store it in segmentation `{segmentation_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`. Create a segmentation named `Bone Threshold Segmentation` and add a segment named `Bone` containing voxels in `Benchmark CT` with intensities from 300 through 800.
 
 ### 12 — Threshold a volume into two segments
-In volume `{volume_name}`, create two segments in `{segmentation_name}`: `{segment_a_name}` for intensities `{a_lower}` through `{a_upper}`, and `{segment_b_name}` for intensities `{b_lower}` through `{b_upper}`. Keep the segments separate.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`. Create a segmentation named `Two Range Segmentation` with separate segments: `Air` for intensities -1000 through -201 and `Dense Tissue` for intensities 400 through 800.
 
 ### 13 — Keep the largest island
-In segmentation `{segmentation_name}`, keep only the largest connected component of segment `{segment_name}`. Remove the other components.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. In its `TumorMask` segment, keep only the largest connected component and remove the smaller components.
 
 ### 14 — Remove small islands
-In segmentation `{segmentation_name}`, remove connected components smaller than `{minimum_voxels}` voxels from segment `{segment_name}`. Keep components at or above that size.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. In its `TumorMask` segment, remove connected components smaller than 4 voxels and keep components of 4 voxels or larger.
 
 ### 15 — Smooth a segment
-Smooth segment `{segment_name}` in segmentation `{segmentation_name}` using the `{smoothing_method}` method with a kernel size of `{kernel_size_mm}` mm. Save the result as `{output_segment_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. Smooth its `TumorMask` segment using the Gaussian method with a 2 mm kernel, saving the result as a separate segment named `TumorMask Smoothed`.
 
 ### 16 — Grow or shrink a segment
-In segmentation `{segmentation_name}`, `{operation}` segment `{segment_name}` by `{margin_mm}` mm. Save the result as `{output_segment_name}` and preserve the segmentation's source geometry. Use `grow` or `shrink` for `{operation}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. Grow its `TumorMask` segment by 2 mm and save the result as a separate segment named `TumorMask Grown`, preserving the segmentation geometry.
 
 ### 17 — Create a segment from a labelmap
-Load labelmap `{fixture_path}` and create a segmentation named `{segmentation_name}` from label value `{label_value}`. Name the resulting segment `{segment_name}` and preserve the labelmap geometry.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/labelmap.nrrd` as a labelmap. Create a segmentation named `Labelmap Segmentation` from label value 1, name the resulting segment `Central Label`, and preserve the labelmap geometry.
 
 ### 18 — Create a closed surface from a segment
-Create a closed-surface representation for segment `{segment_name}` in segmentation `{segmentation_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation` and create a closed-surface representation for its `TumorMask` segment.
 
 ### 19 — Place a markup point
-Create a markups point list named `{markup_name}` with one point at RAS coordinate ({ras_x}, {ras_y}, {ras_z}) mm.
+Create a Markups point list named `Target Point` with one point at RAS coordinate (5, 10, 15) mm.
 
 ### 20 — Measure a line between two points
-Create a line markup named `{markup_name}` with endpoints at RAS coordinates ({start_x}, {start_y}, {start_z}) mm and ({end_x}, {end_y}, {end_z}) mm.
+Create a line markup named `50 mm Test Line` with endpoints at RAS coordinates (0, 0, 0) mm and (30, 40, 0) mm.
 
 ### 21 — Measure an angle
-Create an angle markup named `{markup_name}` with points at RAS coordinates ({point_a_x}, {point_a_y}, {point_a_z}), ({vertex_x}, {vertex_y}, {vertex_z}), and ({point_c_x}, {point_c_y}, {point_c_z}) mm, in that order.
+Create an angle markup named `Right Angle Test` with points at RAS coordinates (1, 0, 0), (0, 0, 0), and (0, 1, 0) mm, in that order.
 
 ### 22 — Create a curve markup
-Create a curve markup named `{markup_name}` passing through these RAS control points in order: `{ras_control_points}` (coordinates in mm).
+Create a curve markup named `Benchmark Curve` passing through these RAS control points in order: (0, 0, 0), (10, 5, 0), (20, 0, 5), and (30, 5, 10) mm.
 
 ### 23 — Create a region of interest
-Create an ROI markup named `{roi_name}` centered at RAS coordinate ({center_x}, {center_y}, {center_z}) mm, with size ({size_x}, {size_y}, {size_z}) mm.
+Create an ROI markup named `Benchmark ROI` centered at RAS coordinate (0, 0, 0) mm, with size (20, 30, 40) mm.
 
 ### 24 — Compute segment statistics
-For segment `{segment_name}` in segmentation `{segmentation_name}`, compute its volume and the mean intensity of volume `{volume_name}` inside the segment. Save the results in a table named `{table_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT` and `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. For segment `TumorMask`, compute its volume and the mean intensity of `Benchmark CT` inside the segment. Save the results in a table named `Tumor Statistics`.
 
 ### 25 — Measure a segment's volume
-Measure the volume of segment `{segment_name}` in segmentation `{segmentation_name}` and save the result in a table named `{table_name}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. Measure the volume of its `TumorMask` segment and save the result in a table named `Tumor Volume`.
 
 ### 26 — Set the four-up layout
-Set the Slicer layout to `{layout_name}`, the four-view arrangement containing the Red, Yellow, Green, and 3D views.
+Set the Slicer layout to `SlicerLayoutFourUpView`, the four-view arrangement containing the Red, Yellow, Green, and 3D views.
 
 ### 27 — Show a volume in slice views
-Set `{volume_name}` as the background volume in the Red, Yellow, and Green slice views.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT` and set it as the background volume in the Red, Yellow, and Green slice views.
 
 ### 28 — Set slice orientation
-Set slice view `{slice_view}` to `{orientation}` orientation. Use `Axial`, `Coronal`, or `Sagittal` for `{orientation}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`, show it in the Red slice view, and set that view to `Sagittal` orientation.
 
 ### 29 — Set slice position
-Set slice view `{slice_view}` to physical offset `{offset_mm}` mm.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`, show it in the Red slice view, and set that view to physical offset 5 mm.
 
 ### 30 — Set window and level
-For volume `{volume_name}`, set the display window to `{window}` and level to `{level}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT` and set its display window to 1600 and level to 300.
 
 ### 31 — Show a segmentation in 3D
-Display segmentation `{segmentation_name}` in the 3D view. Make sure its closed-surface representation is visible.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`, create its closed-surface representation, and display the `TumorMask` segment in the 3D view.
 
 ### 32 — Set model display properties
-For model `{model_name}`, set its display color to `{color_rgb}` (RGB values from 0 to 1) and opacity to `{opacity}` (from 0 to 1).
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/sphere_model.stl` as `Benchmark Sphere`. Set its display color to RGB (0.1, 0.4, 0.9) and opacity to 0.65.
 
 ### 33 — Enable volume rendering
-Enable volume rendering for volume `{volume_name}` and make the rendered volume visible in the 3D view.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`, enable volume rendering for it, and make the rendered volume visible in the 3D view.
 
 ### 34 — Save the full scene as MRB
-Save the complete scene as a Slicer bundle at `{output_path}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT` and `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. Save the complete scene as a Slicer bundle at `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/benchmark_scene.mrb`.
 
 ### 35 — Save the scene as MRML
-Save the scene as an MRML scene at `{output_path}`, including its referenced data files in the requested output directory.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT` and `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`. Save the scene as `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/benchmark_scene/Scene.mrml`, including its referenced data files in that output directory.
 
 ### 36 — Export a volume to NRRD
-Save volume `{volume_name}` as a NRRD file at `{output_path}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT` and save it as a NRRD file at `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/benchmark_ct_export.nrrd`.
 
 ### 37 — Export a segmentation to SEG.NRRD
-Save segmentation `{segmentation_name}` as a `.seg.nrrd` file at `{output_path}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation` and save it as a `.seg.nrrd` file at `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/island_segmentation_export.seg.nrrd`.
 
 ### 38 — Export a segment as STL
-Export segment `{segment_name}` from segmentation `{segmentation_name}` as an STL surface file at `{output_path}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`, create its closed-surface representation, and export the `TumorMask` segment as an STL surface file at `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/tumor_mask.stl`.
 
 ### 39 — Export markups to JSON
-Save markup node `{markup_name}` as a JSON file at `{output_path}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/fiducials.mrk.json` as `Benchmark Fiducials` and save that markup node as a JSON file at `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/fiducials_export.mrk.json`.
 
 ### 40 — Capture a view as an image
-Capture the `{view_name}` view and save it as an image at `{output_path}`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`, show it in the Red slice view, and save a screenshot of the Red slice view to `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/red_slice.png`.
