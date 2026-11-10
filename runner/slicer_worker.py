@@ -30,7 +30,7 @@ def main():
     # slices sends the model request and processes the response async
     timeout = 150
     loop = qt.QEventLoop()
-    finished = {"value": False, "timed_out": False}
+    finished = {"value": False, "timed_out": False, "errors": []}
 
     timer = qt.QTimer()
     timer.setSingleShot(True)
@@ -49,7 +49,8 @@ def main():
     def on_event(event, payload):
         if prev_handler:
             prev_handler(event, payload)
-
+        if event == "error":
+            finished["errors"].append(str(payload))
         # slicey emits "turn_finished" when it completed the request
         # and any tool calls for this turn
         if event == "turn_finished":
@@ -78,9 +79,14 @@ def main():
             slicer.app.processEvents()
             time.sleep(0.05)
         result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy}
+    elif finished["errors"]:
+        result = {"outcome": "slicey_error", "reason": finished["errors"][-1]}
     else:
         result = {"outcome": "finished", "reason": f"turn finished"}  # add checker later here
     result["llm_s"] = round(llm_s, 2)
+    if finished["errors"]:
+        result["errors"] = finished["errors"]
+
     return result
 
 
