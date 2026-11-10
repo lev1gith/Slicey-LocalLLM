@@ -3,12 +3,15 @@ import os
 import slicer
 import qt
 import time
+from pathlib import Path
+import runpy
 
 
 def main():
     # load env variables
     task = json.loads(os.environ["SLICER_BENCH_TASK_JSON"])
     model_name = os.environ["SLICER_BENCH_MODEL"]
+    CHECK_MANAGER = Path(__file__).resolve().parent.parent / "checks" / "checkManager.py"
 
     # start run with empty scene
     # initialize slicey and get its logic object
@@ -78,11 +81,18 @@ def main():
         while logic._busy and time.perf_counter() < deadline:
             slicer.app.processEvents()
             time.sleep(0.05)
-        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy}
+        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy, 
+                  "passed": False}
     elif finished["errors"]:
-        result = {"outcome": "slicey_error", "reason": finished["errors"][-1]}
+        result = {"outcome": "slicey_error", "reason": finished["errors"][-1], "passed": False}
     else:
-        result = {"outcome": "finished", "reason": f"turn finished"}  # add checker later here
+        result = {"outcome": "finished", "reason": "turn finished"}
+        try:
+            run_check = runpy.run_path(str(CHECK_MANAGER))["run_check"]
+            result.update(run_check(task["id"]))  # sets "passed"
+        except Exception as e:
+            result["passed"] = None
+            result["checker_error"] = repr(e)
     result["llm_s"] = round(llm_s, 2)
     if finished["errors"]:
         result["errors"] = finished["errors"]
@@ -96,7 +106,7 @@ def run():
     try:
         return main()
     except Exception as e:
-        return {"outcome": "worker_error", "reason": repr(e)}
+        return {"outcome": "worker_error", "reason": repr(e), "passed": None}
 
 
 RESULT = run()
