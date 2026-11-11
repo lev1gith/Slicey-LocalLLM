@@ -28,6 +28,30 @@ def check_01(ctx):
                f"expected 1 data node, found {ctx.count_data_nodes()}")
 
 
+def check_02(ctx):
+    vol = ctx.one_node("vtkMRMLScalarVolumeNode", "Brain NIfTI")
+    if vol is None:
+        return
+    image = vol.GetImageData()
+
+    # check dimensions of loaded data
+    if ctx.expect(image is not None, "volume has no image data"):
+        ctx.expect(image.GetDimensions() == (286, 286, 90),
+                   f"wrong dimensions {image.GetDimensions()}")
+
+    # check load given file
+    storage = vol.GetStorageNode()
+    path = storage.GetFileName() if storage else None
+    ctx.expect(path is not None and os.path.realpath(path)
+               == os.path.realpath(f"{TEST_FILES}/brain.nii.gz"),
+               f"not loaded from the test file {path}")
+
+    # is other data besides requsted loaded?
+    ctx.expect(ctx.count_data_nodes() == 1,
+               f"expected 1 data node, found {ctx.count_data_nodes()}")
+
+
 CHECKS = {
     "01": check_01,
+    "02": check_02,
 }
