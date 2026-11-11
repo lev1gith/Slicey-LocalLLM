@@ -1,4 +1,5 @@
 import os
+import slicer
 
 TEST_FILES = "/Users/leventel/Desktop/personalCode/slicey_proj/test_files"
 
@@ -51,7 +52,32 @@ def check_02(ctx):
                f"expected 1 data node, found {ctx.count_data_nodes()}")
 
 
+def check_03(ctx):
+    EXPECTED_SLICES = 3
+    vol = ctx.one_node("vtkMRMLScalarVolumeNode", "Synthetic DICOM CT")
+    if vol is None:
+        return
+
+    attr = vol.GetAttribute("DICOM.instanceUIDs")
+    if not ctx.expect(attr, "volume was not loaded from DICOM"):
+        return
+    uids = attr.split()
+
+    # every slice originates from right series
+    db = slicer.dicomDatabase
+    descs = {db.fileValue(db.fileForInstance(u), "0008,103E").strip() for u in uids}
+    ctx.expect(descs == {"Synthetic Test CT"}, f"slices from series {descs}")
+    ctx.expect(len(uids) == EXPECTED_SLICES, f"{len(uids)}/{EXPECTED_SLICES} slices loaded")
+    dims = vol.GetImageData().GetDimensions() if vol.GetImageData() else None
+    ctx.expect(dims is not None and dims[2] == EXPECTED_SLICES, f"image has dims {dims}")
+
+    # nothing else loaded
+    ctx.expect(ctx.count_data_nodes() == 1, f"expected 1 data node, found {ctx.count_data_nodes()}")
+
+
+
 CHECKS = {
     "01": check_01,
     "02": check_02,
+    "03": check_03,
 }
