@@ -5,7 +5,7 @@ import qt
 import time
 from pathlib import Path
 import runpy
-
+import shutil
 
 def main():
     # load env variables
@@ -16,6 +16,11 @@ def main():
     # start run with empty scene
     # initialize slicey and get its logic object
     slicer.mrmlScene.Clear(0)
+    # empty outputs so files from earlier can't pass the checks
+    outputs = Path("/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs")
+    outputs.mkdir(parents=True, exist_ok=True)
+    for p in outputs.iterdir():
+        shutil.rmtree(p) if p.is_dir() else p.unlink()
     slicer.util.selectModule("Slicey")
     slicer.app.processEvents()
 
