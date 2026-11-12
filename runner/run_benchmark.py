@@ -1,11 +1,9 @@
 import json
-import os
 from pathlib import Path
 import requests
 import time
 from datetime import datetime
 
-Slicer = "/Applications/3D Slicer 5.13.0 2026-10-30.app/Contents/MacOS/SlicerApp-real"
 RUNNER_DIR = Path(__file__).resolve().parent
 Worker = RUNNER_DIR / "slicer_worker.py"
 Result_dir = RUNNER_DIR.parent / "results"
@@ -13,14 +11,20 @@ TASKS_DIR = RUNNER_DIR.parent / "tasks"
 TEST_FILES = RUNNER_DIR.parent / "checks" / "test_files"
 
 
-def main(model, input_format, path):
-    path = TASKS_DIR / path  # task files are looked up in tasks/
-    if input_format == "json":
+def main(model, path, task_ids=None, repeats=1):
+    path = TASKS_DIR / path
+    if path.suffix == ".json":
         tasks = load_json_tasks(path)
-    elif input_format == "md":
+    elif path.suffix == ".md":
         tasks = parse_md(path)
     else:
-        raise ValueError("Unsupported format")
+        raise ValueError(f"Unsupported task file: {path.name}")
+
+    if task_ids:
+        missing = task_ids - {t["id"] for t in tasks}
+        if missing:
+            raise ValueError(f"Unknown task ids: {sorted(missing)}")
+        tasks = [t for t in tasks if t["id"] in task_ids]
 
     for task in tasks:
         task["prompt"] = task["prompt"].replace("{TEST_FILES}", str(TEST_FILES))
@@ -28,56 +32,58 @@ def main(model, input_format, path):
     run_id, run_dir = new_run_dir()
     print(f"Run {run_id} -> {run_dir}", flush=True)
 
-    for task in tasks:
-        print(f"{task['id']}: {task['prompt']}")
+    for repeat in range(1, repeats + 1):
+        for task in tasks:
+            print(f"{task['id']}: {task['prompt']}")
 
-        # store task details in JSON strings in an environment variable
-        # worker converts it back to a dictionary(can't pass dict only string
-        # in env varible)
-        # body of POST
-        # Slicer's /slicer/exec returns the value of __execResult as JSON
-        # (printed output is not returned), so pass the worker's RESULT there
-        code = (
-            "import os, runpy\n"
-            f"os.environ['SLICER_BENCH_TASK_JSON'] = {json.dumps(task)!r}\n"
-            f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
-            f"__execResult = runpy.run_path({str(Worker)!r}, run_name='__main__')['RESULT']\n"
-        )
-        start = time.perf_counter()
-        try:
-            response = requests.post(
-                "http://localhost:2016/slicer/exec",
-                data=code,
-                timeout=300,
+            # store task details in JSON strings in an environment variable
+            # worker converts it back to a dictionary(can't pass dict only string
+            # in env varible)
+            # body of POST
+            # Slicer's /slicer/exec returns the value of __execResult as JSON
+            # (printed output is not returned), so pass the worker's RESULT there
+            code = (
+                "import os, runpy\n"
+                f"os.environ['SLICER_BENCH_TASK_JSON'] = {json.dumps(task)!r}\n"
+                f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
+                f"__execResult = runpy.run_path({str(Worker)!r}, run_name='__main__')['RESULT']\n"
             )
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            record = {"outcome": "request_error", "reason": str(e)}
-        else:
+            start = time.perf_counter()
             try:
-                record = response.json()
-            except ValueError:
-                record = {
-                    "outcome": "code_error",
-                    "reason": "non-JSON response",
-                    "raw": response.text[-500:],
-                }
-            if not isinstance(record, dict) or not record:
-                # {} means __execResult was never set by the worker
-                record = {
-                    "outcome": "code_error",
-                    "reason": "worker returned no result",
-                    "raw": response.text[-500:],
-                }
-        wall_s = round(time.perf_counter() - start, 2)
-        record["task_id"] = task["id"]
-        record["wall_s"] = wall_s
-        record["run_id"] = run_id
-        record["model"] = model
-        record["timestamp"] = datetime.now().isoformat(timespec="seconds")
+                response = requests.post(
+                    "http://localhost:2016/slicer/exec",
+                    data=code,
+                    timeout=300,
+                )
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                record = {"outcome": "request_error", "reason": str(e)}
+            else:
+                try:
+                    record = response.json()
+                except ValueError:
+                    record = {
+                        "outcome": "code_error",
+                        "reason": "non-JSON response",
+                        "raw": response.text[-500:],
+                    }
+                if not isinstance(record, dict) or not record:
+                    # {} means __execResult was never set by the worker
+                    record = {
+                        "outcome": "code_error",
+                        "reason": "worker returned no result",
+                        "raw": response.text[-500:],
+                    }
+            wall_s = round(time.perf_counter() - start, 2)
+            record["task_id"] = task["id"]
+            record["wall_s"] = wall_s
+            record["repeat"] = repeat
+            record["run_id"] = run_id
+            record["model"] = model
+            record["timestamp"] = datetime.now().isoformat(timespec="seconds")
 
-        print(f"  -> {record['outcome']}: {record.get('reason', '')} ({wall_s}s)", flush=True)
-        append_record(run_dir, record)
+            print(f"  -> {record['outcome']}: {record.get('reason', '')} ({wall_s}s)", flush=True)
+            append_record(run_dir, record)
 
 
 def append_record(run_dir, record):
@@ -132,5 +138,28 @@ def parse_md(path):
     return tasks
 
 
+def parse_task_ids(spec):
+    # "01-08,11" -> {"01", ..., "08", "11"}; keeps zero-padding like "01"
+    ids = set()
+    for part in spec.split(","):
+        part = part.strip()
+        if "-" in part:
+            start, end = part.split("-")
+            width = len(start)
+            ids.update(str(i).zfill(width) for i in range(int(start), int(end) + 1))
+        elif part:
+            ids.add(part)
+    return ids
+
+
 if __name__ == "__main__":
-    main(model="qwen3-5-4b", input_format="md", path="task_prompts.md")
+    import argparse
+    p = argparse.ArgumentParser(description="Run Slicey benchmark tasks")
+    p.add_argument("--model", default="qwen3-5-4b", help="model name as shown in Slicey")
+    p.add_argument("--file", default="task_prompts.md", help="task file in tasks/")
+    p.add_argument("--tasks", help='task ids, e.g. "01-08,11" (default: all)')
+    p.add_argument("--repeats", type=int, default=1, help="run each task N times")
+    args = p.parse_args()
+    main(model=args.model, path=args.file,
+         task_ids=parse_task_ids(args.tasks) if args.tasks else None,
+         repeats=args.repeats)
