@@ -107,8 +107,10 @@ def check_segmentation(ctx, name):
                f"expected 1 segment, found {segmentation.GetNumberOfSegments()}")
     seg_id = segmentation.GetSegmentIdBySegmentName(SEGMENT_NAME)
     if ctx.expect(seg_id, f"no segment named '{SEGMENT_NAME}'"):
-        voxels = slicer.util.arrayFromSegmentBinaryLabelmap(seg, seg_id).sum()
-        ctx.expect(voxels > 0, f"segment '{SEGMENT_NAME}' is empty")
+        # the internal labelmap needs no reference volume (task 04 has none)
+        labelmap = slicer.util.arrayFromSegmentInternalBinaryLabelmap(seg, seg_id)
+        ctx.expect(labelmap is not None and labelmap.any(),
+                   f"segment '{SEGMENT_NAME}' is empty")
 
 
 def check_model(ctx, name):
