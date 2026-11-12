@@ -2,7 +2,7 @@ import runpy
 from pathlib import Path
 import slicer
 
-CHECKS_DIR = Path(__file__).resolve.parent()
+CHECKS_DIR = Path(__file__).resolve().parent
 CHECK_FILES = ["checkload.py"] # checker files
 
 DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
@@ -26,7 +26,9 @@ class CheckContext:
         return nodes[0]
 
     def count_data_nodes(self):
-        return sum(len(slicer.util.getNodesByClass(c)) for c in DATA_CLASSES)
+        return sum(1 for c in DATA_CLASSES
+                for n in slicer.util.getNodesByClass(c)
+                if not n.GetHideFromEditors())
 
 
 def load_checks():
