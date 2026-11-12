@@ -209,13 +209,13 @@ def check_08(ctx):
         ctx.expect(image.GetDimensions() == (256, 256, 130),
                    f"wrong dimensions {image.GetDimensions()}")
 
-    # came from the Sample Data download, not test_files/MRHead.nrrd
-    # (same image; SampleData saves its downloads in the remote cache folder)
+    # Slicer 5.13's Sample Data leaves the volume without a storage node,
+    # while loading the test file gives one that points at it.
     storage = vol.GetStorageNode()
-    path = os.path.realpath(storage.GetFileName()) if storage and storage.GetFileName() else None
-    cache_dir = os.path.realpath(slicer.mrmlScene.GetCacheManager().GetRemoteCacheDirectory())
-    ctx.expect(path is not None and path.startswith(cache_dir + os.sep),
-               f"not loaded via Sample Data (source: {path})")
+    path = storage.GetFileName() if storage else None
+    ctx.expect(path is None
+               or os.path.realpath(path) != os.path.realpath(f"{TEST_FILES}/MRHead.nrrd"),
+               f"loaded from test_files/MRHead.nrrd, not via Sample Data (source: {path})")
 
     ctx.expect(ctx.count_data_nodes() == 1, f"expected 1 data node, found {ctx.count_data_nodes()}")
 
