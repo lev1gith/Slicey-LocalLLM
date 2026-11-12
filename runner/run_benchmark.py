@@ -9,15 +9,21 @@ Slicer = "/Applications/3D Slicer 5.13.0 2026-10-30.app/Contents/MacOS/SlicerApp
 RUNNER_DIR = Path(__file__).resolve().parent
 Worker = RUNNER_DIR / "slicer_worker.py"
 Result_dir = RUNNER_DIR.parent / "results"
+TASKS_DIR = RUNNER_DIR.parent / "tasks"
+TEST_FILES = RUNNER_DIR.parent / "checks" / "test_files"
 
 
 def main(model, input_format, path):
+    path = TASKS_DIR / path  # task files are looked up in tasks/
     if input_format == "json":
         tasks = load_json_tasks(path)
     elif input_format == "md":
         tasks = parse_md(path)
     else:
         raise ValueError("Unsupported format")
+
+    for task in tasks:
+        task["prompt"] = task["prompt"].replace("{TEST_FILES}", str(TEST_FILES))
 
     run_id, run_dir = new_run_dir()
     print(f"Run {run_id} -> {run_dir}", flush=True)
@@ -127,4 +133,4 @@ def parse_md(path):
 
 
 if __name__ == "__main__":
-    main(model="qwen3-5-4b", input_format="md", path="tasks/task_prompts.md")
+    main(model="qwen3-5-4b", input_format="md", path="task_prompts.md")
