@@ -1,7 +1,10 @@
 import os
 import slicer
 
-TEST_FILES = "/Users/leventel/Desktop/personalCode/slicey_proj/test_files"
+from pathlib import Path
+
+# fixtures live next to this file, in checks/test_files
+TEST_FILES = str(Path(__file__).resolve().parent / "test_files")
 
 
 # 01 — Load a NRRD volume
