@@ -1,0 +1,85 @@
+{
+  "@schema": "https://raw.githubusercontent.com/slicer/slicer/main/Modules/Loadable/Markups/Resources/Schema/markups-schema-v1.0.0.json",
+  "markups": [
+    {
+      "type": "Fiducial",
+      "coordinateSystem": "RAS",
+      "locked": false,
+      "labelFormat": "F-%N",
+      "controlPoints": [
+        {
+          "id": "1",
+          "label": "Anterior",
+          "position": [
+            0.0,
+            20.0,
+            0.0
+          ],
+          "orientation": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "selected": true,
+          "locked": false,
+          "visibility": true,
+          "positionStatus": "defined"
+        },
+        {
+          "id": "2",
+          "label": "Center",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "orientation": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "selected": true,
+          "locked": false,
+          "visibility": true,
+          "positionStatus": "defined"
+        },
+        {
+          "id": "3",
+          "label": "Posterior",
+          "position": [
+            0.0,
+            -20.0,
+            0.0
+          ],
+          "orientation": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "selected": true,
+          "locked": false,
+          "visibility": true,
+          "positionStatus": "defined"
+        }
+      ]
+    }
+  ]
+}
