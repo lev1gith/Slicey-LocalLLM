@@ -17,7 +17,7 @@ def main():
     # initialize slicey and get its logic object
     slicer.mrmlScene.Clear(0)
     # empty outputs so files from earlier can't pass the checks
-    outputs = Path("/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs")
+    outputs = Path(__file__).resolve().parent.parent / "checks" / "test_files" / "outputs"
     outputs.mkdir(parents=True, exist_ok=True)
     for p in outputs.iterdir():
         shutil.rmtree(p) if p.is_dir() else p.unlink()
