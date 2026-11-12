@@ -3,7 +3,7 @@ from pathlib import Path
 import slicer
 
 CHECKS_DIR = Path(__file__).resolve().parent
-CHECK_FILES = ["checkload.py"] # checker files
+CHECK_FILES = ["checkLoad.py"] # checker files
 
 DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
                 "vtkMRMLModelNode", "vtkMRMLMarkupsNode"]
