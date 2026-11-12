@@ -5,16 +5,16 @@ Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/MRHead.nrrd` i
 Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/brain.nii.gz` into the scene as a volume named `Brain NIfTI`. Do not load any other data.
 
 ### 03 — Import a DICOM series
-Import the DICOM series from `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/dicom_series` and load the series whose description is `Synthetic Test CT` as a volume named `Synthetic DICOM CT`.
+Import the DICOM series from `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/dicom_series` and load the series whose description is `Synthetic Test CT` as a volume named `Synthetic DICOM CT`. Do not load any other data.
 
 ### 04 — Load a saved segmentation
-Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` into the scene as a segmentation named `Island Segmentation`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` into the scene as a segmentation named `Island Segmentation`. Do not load any other data.
 
 ### 05 — Load a surface model
-Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/sphere_model.stl` into the scene as a model named `Benchmark Sphere`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/sphere_model.stl` into the scene as a model named `Benchmark Sphere`. Do not load any other data.
 
 ### 06 — Load markups from JSON
-Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/fiducials.mrk.json` into the scene as a markup node named `Benchmark Fiducials`.
+Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/fiducials.mrk.json` into the scene as a markup node named `Benchmark Fiducials`. Do not load any other data.
 
 ### 07 — Summarize the scene
 Load `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/benchmark_ct.nrrd` as `Benchmark CT`, `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/islands.seg.nrrd` as `Island Segmentation`, `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/sphere_model.stl` as `Benchmark Sphere`, and `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/fiducials.mrk.json` as `Benchmark Fiducials`. Write a concise scene summary to `/Users/leventel/Desktop/personalCode/slicey_proj/test_files/outputs/scene_summary.txt`, listing every node's name and node type. Include the four named nodes above.
