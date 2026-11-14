@@ -65,7 +65,7 @@ Slicey-LocalLLM/
 ├── docs/
 │   ├── workplan.md        # setup, model selection and benchmark plan
 │   └── tasks.md           # the candidate tasks and their intended checks
-└── results/               # one folder per run: results/<timestamp>/results.jsonl
+└── results/               # one folder per run (see "Run output" below)
 ```
 
 ### How a task runs
@@ -79,8 +79,24 @@ Slicey-LocalLLM/
    - selects the model;
    - sends the prompt through `logic.sendUserMessage`.
 4. It waits for Slicey's `turn_finished` event, for up to 150 s. On a timeout it cancels the turn and waits for Slicey to become idle again.
-5. If the turn finished, the worker runs the task's check from `checks/` against the scene and returns the result to the runner.
-6. The runner adds timing and run info, then appends one line to `results/<run_id>/results.jsonl`.
+5. If the turn finished, the worker runs the task's check from `checks/` against the scene.
+6. The worker then saves the scene as an `.mrb` file and copies Slicey's chat log for the task into the run folder, and returns the result to the runner. This happens after the check, because saving a scene can change the file paths the checks read.
+7. The runner adds timing and run info, then appends one line to the run's `results.jsonl`.
+
+### Run output
+
+Each run gets its own folder, named after the model and the start time. A `/` in the model name becomes `_`.
+
+```
+results/qwen3-5-4b_2026-11-14T15-02-11/
+├── results.jsonl              # one line per task attempt
+└── outputs/
+    ├── task01_rep1_outp.mrb   # the scene the model left behind (open in Slicer: File → Load Scene)
+    ├── task01_rep1_chat.<ext> # Slicey's chat log: the code the model ran, its errors and replies
+    └── ...
+```
+
+The `.mrb` shows *what* the model produced, and the chat log shows *how* it got there. A scene is saved for every outcome except `worker_error`; for a timeout it's saved after the turn was cancelled. Each `.mrb` contains every file loaded into the scene, so runs add up quickly (about 7 MB for a task with MRHead).
 
 ### Result records
 
@@ -95,6 +111,8 @@ Each line of `results.jsonl` is one task attempt:
 | `task_id`, `repeat`, `run_id`, `model`, `timestamp` | which attempt this was |
 | `cancel_clean` | after a timeout: whether Slicey was idle again before the next task |
 | `errors`, `checker_error` | error messages from Slicey or from the check, if any |
+| `scene_file`, `chat_log` | the task's saved `.mrb` and chat log, relative to the run folder; `null` if saving failed |
+| `scene_error`, `chat_log_error` | why saving the scene or copying the chat log failed (saving never changes the outcome) |
 
 ## Running the benchmark
 
@@ -128,7 +146,7 @@ python runner/run_benchmark.py --help
 | `--tasks` | all | task ids, e.g. `01-08,11` |
 | `--repeats` | `1` | run each task this many times |
 
-All paths are worked out from the repo's own location, so you can run the runner from any folder. The run folder is printed at the start (`Run <id> -> results/<id>`). Each task is written to disk as soon as it finishes, so stopping with Ctrl+C keeps the results collected so far.
+All paths are worked out from the repo's own location, so you can run the runner from any folder. The run folder is printed at the start (`Run <model>_<timestamp> -> results/<model>_<timestamp>`). Each task is written to disk as soon as it finishes, so stopping with Ctrl+C keeps the results collected so far.
 
 ### Testing checks without a model
 
