@@ -105,8 +105,20 @@ def main():
     scene_file = os.environ.get("SLICER_BENCH_SCENE_FILE")
     if scene_file:
         result.update(save_scene(scene_file))
+        result.update(save_chat_log(logic, scene_file))
     return result
 
+def save_chat_log(logic, scene_file):
+    try:
+        src = logic.chatLogPath
+        if not src or not os.path.isfile(src):
+            return {"chat_log": None, "chat_log_error": f"no chat log ({src})"}
+        dst = Path(scene_file).with_name(
+            Path(scene_file).name.replace("_outp.mrb", "_chat") + Path(src).suffix)
+        shutil.copy(src, dst)
+        return {"chat_log": f"outputs/{dst.name}"}
+    except Exception as e:
+        return {"chat_log": None, "chat_log_error": repr(e)}
 def save_scene(path):
     try:
         if slicer.util.saveScene(path):
