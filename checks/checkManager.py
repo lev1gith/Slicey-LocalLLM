@@ -4,7 +4,7 @@ from pathlib import Path
 import slicer
 
 CHECKS_DIR = Path(__file__).resolve().parent
-CHECK_FILES = ["checkLoad.py", "checkMeasure.py"] # checker files
+CHECK_FILES = ["checkLoad.py", "checkMeasure.py", "checkView.py"] # checker files
 TEST_FILES = CHECKS_DIR / "test_files"
 
 DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
@@ -65,6 +65,7 @@ def run_check(task_id):
     fn = load_checks().get(task_id)
     if fn is None:
         return {"passed": None, "failures": ["no check for this task"]}
+    slicer.app.processEvents()  # let views catch up with the model's last changes
     ctx = CheckContext()
     fn(ctx)
     return {"passed": not ctx.failures, "failures": ctx.failures}
