@@ -117,3 +117,10 @@ Load `{TEST_FILES}/fiducials.mrk.json` as `Benchmark Fiducials` and save that ma
 
 ### 40 — Capture a view as an image
 Load `{TEST_FILES}/benchmark_ct.nrrd` as `Benchmark CT`, show it in the Red slice view, and save a screenshot of the Red slice view to `{TEST_FILES}/outputs/red_slice.png`.
+
+### 41 - Create clipping plane
+Load MRHead example. Show it in 3D view using volume rendering. Create a clipping plane in the middle of the brain in sagittal orientation
+
+### 42 - Measure volume
+Load a CTChest.nrrd volume and CTChest.seg.nrrd segmentation
+Measure the volume of the left and right lung
