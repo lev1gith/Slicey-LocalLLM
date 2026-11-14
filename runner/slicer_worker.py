@@ -102,6 +102,7 @@ def main():
     if finished["errors"]:
         result["errors"] = finished["errors"]
 
+    # call save_scene, and save_chat log to save them along results
     scene_file = os.environ.get("SLICER_BENCH_SCENE_FILE")
     if scene_file:
         result.update(save_scene(scene_file))
@@ -119,6 +120,7 @@ def save_chat_log(logic, scene_file):
         return {"chat_log": f"outputs/{dst.name}"}
     except Exception as e:
         return {"chat_log": None, "chat_log_error": repr(e)}
+
 def save_scene(path):
     try:
         if slicer.util.saveScene(path):
