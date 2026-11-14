@@ -39,8 +39,8 @@ def main():
     # slices sends the model request and processes the response async
     timeout = 150
     loop = qt.QEventLoop()
-    finished = {"value": False, "timed_out": False, "errors": []}
-    usage = {"session": None, "allTime": None}
+    finished = {"value": False, "timed_out": False, "errors": [],
+        "session": None}
 
     timer = qt.QTimer()
     timer.setSingleShot(True)
@@ -68,8 +68,8 @@ def main():
             loop.quit()
         # get token usage when "usage_updated" emitted
         if event == "usage_updated":
-            usage["session"] = payload["session"]
-            usage["allTime"] = payload["allTime"]
+            finished["session"] = payload["session"]
+
     start = time.perf_counter()
     timer.start(timeout * 1000)
     try:
@@ -104,6 +104,7 @@ def main():
             result["passed"] = None
             result["checker_error"] = repr(e)
     result["llm_s"] = round(llm_s, 2)
+    result["session_usage"] = finished["session"]
     if finished["errors"]:
         result["errors"] = finished["errors"]
 
@@ -113,13 +114,6 @@ def main():
         result.update(save_scene(scene_file))
         result.update(save_chat_log(logic, scene_file))
     return result
-
-def save_usage(usage):
-    try:
-        if not usage:
-            return {"session": None, "allTime": None}
-    except Exception as e:
-        return {"session": None, "allTime": None}
 
 def save_chat_log(logic, scene_file):
     try:
