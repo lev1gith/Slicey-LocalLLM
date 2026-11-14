@@ -1,9 +1,10 @@
+import os
 import runpy
 from pathlib import Path
 import slicer
 
 CHECKS_DIR = Path(__file__).resolve().parent
-CHECK_FILES = ["checkLoad.py"] # checker files
+CHECK_FILES = ["checkLoad.py", "checkMeasure.py"] # checker files
 TEST_FILES = CHECKS_DIR / "test_files"
 
 DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
@@ -27,6 +28,20 @@ class CheckContext:
         nodes = [n for n in slicer.util.getNodesByClass(cls) if n.GetName() == name]
         if len(nodes) != 1:
             self.failures.append(f"expected 1 {cls} named '{name}', found {len(nodes)}")
+            return None
+        return nodes[0]
+
+    def node_from_file(self, cls, filename):
+        # find an input node by the file it was loaded from, whatever its name
+        target = os.path.realpath(self.path(filename))
+        nodes = []
+        for n in slicer.util.getNodesByClass(cls):
+            storage = n.GetStorageNode()
+            path = storage.GetFileName() if storage else None
+            if path and os.path.realpath(path) == target:
+                nodes.append(n)
+        if len(nodes) != 1:
+            self.failures.append(f"expected 1 {cls} loaded from {filename}, found {len(nodes)}")
             return None
         return nodes[0]
 
