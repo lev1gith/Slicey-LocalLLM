@@ -38,9 +38,6 @@ def main(model, path, task_ids=None, repeats=1):
         for task in tasks:
             print(f"{task['id']}: {task['prompt']}")
 
-            # store task details in JSON strings in an environment variable
-            # worker converts it back to a dictionary(can't pass dict only string
-            # in env varible)
             # body of POST
             # Slicer's /slicer/exec returns the value of __execResult as JSON
             # (printed output is not returned), so pass the worker's RESULT there
