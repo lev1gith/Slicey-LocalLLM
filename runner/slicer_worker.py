@@ -16,6 +16,13 @@ def main():
     # start run with empty scene
     # initialize slicey and get its logic object
     slicer.mrmlScene.Clear(0)
+
+    # reset view state
+    lm = slicer.app.layoutManager()
+    lm.setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutConventionalView)
+    for name, orientation in (("Red", "Axial"), ("Yellow", "Sagittal"), ("Green", "Coronal")):
+        slicer.mrmlScene.GetNodeByID(f"vtkMRMLSliceNode{name}").SetOrientation(orientation)
+        lm.sliceWidget(name).sliceLogic().SetSliceOffset(0)
     # empty outputs so files from earlier can't pass the checks
     outputs = Path(__file__).resolve().parent.parent / "checks" / "test_files" / "outputs"
     outputs.mkdir(parents=True, exist_ok=True)
