@@ -75,13 +75,14 @@ Slicey-LocalLLM/
 3. The worker prepares a clean starting point, then sends the prompt:
    - clears the scene;
    - empties `outputs/`;
-   - resets Slicey's conversation;
+   - resets Slicey's conversation and its session token counter;
    - selects the model;
    - sends the prompt through `logic.sendUserMessage`.
 4. It waits for Slicey's `turn_finished` event, for up to 150 s. On a timeout it cancels the turn and waits for Slicey to become idle again.
 5. If the turn finished, the worker runs the task's check from `checks/` against the scene.
-6. The worker then saves the scene as an `.mrb` file and copies Slicey's chat log for the task into the run folder, and returns the result to the runner. This happens after the check, because saving a scene can change the file paths the checks read.
-7. The runner adds timing and run info, then appends one line to the run's `results.jsonl`.
+6. The worker reads the task's token usage from Slicey's session counters.
+7. The worker then saves the scene as an `.mrb` file and copies Slicey's chat log for the task into the run folder, and returns the result to the runner. This happens after the check, because saving a scene can change the file paths the checks read.
+8. The runner adds timing and run info, then appends one line to the run's `results.jsonl`.
 
 ### Run output
 
@@ -92,7 +93,7 @@ results/qwen3-5-4b_2026-11-14T15-02-11/
 ├── results.jsonl              # one line per task attempt
 └── outputs/
     ├── task01_rep1_outp.mrb   # the scene the model left behind (open in Slicer: File → Load Scene)
-    ├── task01_rep1_chat.<ext> # Slicey's chat log: the code the model ran, its errors and replies
+    ├── task01_rep1_chat.md    # Slicey's chat log: the code the model ran, its errors and replies
     └── ...
 ```
 
@@ -111,8 +112,18 @@ Each line of `results.jsonl` is one task attempt:
 | `task_id`, `repeat`, `run_id`, `model`, `timestamp` | which attempt this was |
 | `cancel_clean` | after a timeout: whether Slicey was idle again before the next task |
 | `errors`, `checker_error` | error messages from Slicey or from the check, if any |
+| `session_usage` | tokens the task used: `inputTokens`, `outputTokens`, `costUsd`, `costEstimateIncomplete` (see below) |
 | `scene_file`, `chat_log` | the task's saved `.mrb` and chat log, relative to the run folder; `null` if saving failed |
 | `scene_error`, `chat_log_error` | why saving the scene or copying the chat log failed (saving never changes the outcome) |
+
+#### Token usage
+
+`session_usage` comes from Slicey's session counters, which are reset at the start of every task, so the numbers cover that task only. They're read after the turn ends, and for a timeout after it has been cancelled.
+
+- **Local models** (agent backend through LM Studio): Slicey counts tokens only when the agent reports the end of a turn. A cancelled turn still reports its usage, so timed-out tasks have real counts too.
+- **Claude Opus** (`claude-api` backend): tokens are counted after every API request.
+- **Cost:** `costUsd` is `0` for local models, because they aren't billed per token. It's only meaningful for the Opus baseline.
+- **Harness errors** (`request_error`, `code_error`, `worker_error`) have no `session_usage` field, because no model ran.
 
 ## Running the benchmark
 
