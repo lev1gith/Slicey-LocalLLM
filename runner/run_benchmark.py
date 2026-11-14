@@ -29,7 +29,7 @@ def main(model, path, task_ids=None, repeats=1):
     for task in tasks:
         task["prompt"] = task["prompt"].replace("{TEST_FILES}", str(TEST_FILES))
 
-    run_id, run_dir = new_run_dir()
+    run_id, run_dir = new_run_dir(model)
     scenes_dir = run_dir / "outputs" # worker saves each task's scene here as .mrb
     scenes_dir.mkdir(exist_ok=True)
     print(f"Run {run_id} -> {run_dir}", flush=True)
@@ -96,8 +96,9 @@ def append_record(run_dir, record):
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def new_run_dir():
-    run_id = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+def new_run_dir(model):
+    safe_model = model.replace("/", "_")  # make sure "/" in model name doesn't create subfolder
+    run_id = f"{safe_model}_{datetime.now().strftime('%Y-%m-%dT%H-%M-%S')}"
     run_dir = Result_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_id, run_dir
