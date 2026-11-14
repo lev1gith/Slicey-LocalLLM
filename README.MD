@@ -79,7 +79,7 @@ Slicey-LocalLLM/
    - selects the model;
    - sends the prompt through `logic.sendUserMessage`.
 4. It waits for Slicey's `turn_finished` event, for up to 150 s. On a timeout it cancels the turn and waits for Slicey to become idle again.
-5. If the turn finished, the worker runs the task's check from `checks/` against the scene.
+5. The worker runs the task's check from `checks/` against the scene. If the turn finished, the check decides `passed`. After a timeout the task still counts as failed, but the check runs anyway, once the turn has been cancelled, and its result is recorded separately as `passed_at_timeout`.
 6. The worker reads the task's token usage from Slicey's session counters.
 7. The worker then saves the scene as an `.mrb` file and copies Slicey's chat log for the task into the run folder, and returns the result to the runner. This happens after the check, because saving a scene can change the file paths the checks read.
 8. The runner adds timing and run info, then appends one line to the run's `results.jsonl`.
@@ -108,6 +108,7 @@ Each line of `results.jsonl` is one task attempt:
 | `outcome` | `finished`, `timeout`, `slicey_error` (Slicey reported an error), `worker_error`, `request_error` or `code_error` (harness problems) |
 | `passed` | `true` / `false` from the check; `null` if the task wasn't scored (no check, checker crashed, harness error) |
 | `failures` | what the check found wrong, when `passed` is `false` |
+| `passed_at_timeout`, `failures_at_timeout` | timeouts only: the check's result on the scene the model left behind. `passed` stays `false`, so `passed_at_timeout: true` means the work was right but the model didn't end its turn in time |
 | `llm_s`, `wall_s` | time from prompt to end of turn, and total time for the task |
 | `task_id`, `repeat`, `run_id`, `model`, `timestamp` | which attempt this was |
 | `cancel_clean` | after a timeout: whether Slicey was idle again before the next task |
