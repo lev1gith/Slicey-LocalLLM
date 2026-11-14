@@ -1,11 +1,6 @@
 import os
 import slicer
 
-from pathlib import Path
-
-# fixtures live next to this file, in checks/test_files
-TEST_FILES = str(Path(__file__).resolve().parent / "test_files")
-
 
 # 01 — Load a NRRD volume
 def check_01(ctx):
@@ -24,7 +19,7 @@ def check_01(ctx):
     storage = vol.GetStorageNode()
     path = storage.GetFileName() if storage else None
     ctx.expect(path is not None and os.path.realpath(path)
-               == os.path.realpath(f"{TEST_FILES}/MRHead.nrrd"),
+               == os.path.realpath(ctx.path("MRHead.nrrd")),
                f"not loaded from the test file (source: {path})")
 
     # "Do not load any other data."
@@ -47,7 +42,7 @@ def check_02(ctx):
     storage = vol.GetStorageNode()
     path = storage.GetFileName() if storage else None
     ctx.expect(path is not None and os.path.realpath(path)
-               == os.path.realpath(f"{TEST_FILES}/brain.nii.gz"),
+               == os.path.realpath(ctx.path("brain.nii.gz")),
                f"not loaded from the test file {path}")
 
     # is other data besides requsted loaded?
@@ -81,12 +76,12 @@ def check_03(ctx):
 # helpers for 04-08
 
 def loaded_from(ctx, node, filename):
-    # node's storage node points at TEST_FILES/filename
+    # node's storage node points at test_files/filename
     storage = node.GetStorageNode()
     path = storage.GetFileName() if storage else None
     return ctx.expect(
         path is not None
-        and os.path.realpath(path) == os.path.realpath(f"{TEST_FILES}/{filename}"),
+        and os.path.realpath(path) == os.path.realpath(ctx.path(filename)),
         f"'{node.GetName()}' not loaded from {filename} (source: {path})")
 
 
@@ -162,7 +157,6 @@ def check_06(ctx):
 
 
 # 07 — Summarize the scene
-SUMMARY_FILE = f"{TEST_FILES}/outputs/scene_summary.txt"
 # words that count as naming each node's type in the summary
 SUMMARY_NODES = {
     "Benchmark CT": ("volume",),
@@ -173,6 +167,8 @@ SUMMARY_NODES = {
 
 
 def check_07(ctx):
+    summary_file = ctx.path("outputs/scene_summary.txt")
+
     # the four loads
     ct = ctx.one_node("vtkMRMLScalarVolumeNode", "Benchmark CT")
     if ct is not None:
@@ -187,9 +183,9 @@ def check_07(ctx):
 
     # the summary file (the worker must empty outputs/ before each task,
     # or a file from an earlier run would pass this)
-    if not ctx.expect(os.path.isfile(SUMMARY_FILE), f"{SUMMARY_FILE} not written"):
+    if not ctx.expect(os.path.isfile(summary_file), f"{summary_file} not written"):
         return
-    with open(SUMMARY_FILE, encoding="utf-8", errors="replace") as f:
+    with open(summary_file, encoding="utf-8", errors="replace") as f:
         lines = f.read().splitlines()
     for name, type_words in SUMMARY_NODES.items():
         name_lines = [line for line in lines if name in line]
@@ -217,7 +213,7 @@ def check_08(ctx):
     storage = vol.GetStorageNode()
     path = storage.GetFileName() if storage else None
     ctx.expect(path is None
-               or os.path.realpath(path) != os.path.realpath(f"{TEST_FILES}/MRHead.nrrd"),
+               or os.path.realpath(path) != os.path.realpath(ctx.path("MRHead.nrrd")),
                f"loaded from test_files/MRHead.nrrd, not via Sample Data (source: {path})")
 
     ctx.expect(ctx.count_data_nodes() == 1, f"expected 1 data node, found {ctx.count_data_nodes()}")
