@@ -33,12 +33,14 @@ def main():
     combo.setCurrentText(model_name)
     logic = widget.logic
     logic.resetConversation()
+    logic.resetSessionUsage()
 
     # create event loop so this script can wait while slicey works
     # slices sends the model request and processes the response async
     timeout = 150
     loop = qt.QEventLoop()
     finished = {"value": False, "timed_out": False, "errors": []}
+    usage = {"session": None, "allTime": None}
 
     timer = qt.QTimer()
     timer.setSingleShot(True)
@@ -64,7 +66,10 @@ def main():
         if event == "turn_finished":
             finished["value"] = True
             loop.quit()
-
+        # get token usage when "usage_updated" emitted
+        if event == "usage_updated":
+            usage["session"] = payload["session"]
+            usage["allTime"] = payload["allTime"]
     start = time.perf_counter()
     timer.start(timeout * 1000)
     try:
@@ -108,6 +113,13 @@ def main():
         result.update(save_scene(scene_file))
         result.update(save_chat_log(logic, scene_file))
     return result
+
+def save_usage(usage):
+    try:
+        if not usage:
+            return {"session": None, "allTime": None}
+    except Exception as e:
+        return {"session": None, "allTime": None}
 
 def save_chat_log(logic, scene_file):
     try:
