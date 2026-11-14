@@ -96,16 +96,17 @@ def main():
             time.sleep(0.05)
         result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy,
                   "passed": False}
+        # the turn failed, but record whether the scene was already right
+        at_timeout = check_task(CHECK_MANAGER, task["id"])
+        result["passed_at_timeout"] = at_timeout["passed"]
+        result["failures_at_timeout"] = at_timeout.get("failures", [])
+        if "checker_error" in at_timeout:
+            result["checker_error"] = at_timeout["checker_error"]
     elif finished["errors"]:
         result = {"outcome": "slicey_error", "reason": finished["errors"][-1], "passed": False}
     else:
         result = {"outcome": "finished", "reason": "turn finished"}
-        try:
-            run_check = runpy.run_path(str(CHECK_MANAGER))["run_check"]
-            result.update(run_check(task["id"]))  # sets "passed"
-        except Exception as e:
-            result["passed"] = None
-            result["checker_error"] = repr(e)
+        result.update(check_task(CHECK_MANAGER, task["id"]))  # sets passed
     result["llm_s"] = round(llm_s, 2)
     result["session_usage"] = {
             "inputTokens": logic.sessionInputTokens,
@@ -142,6 +143,13 @@ def save_scene(path):
         return {"scene_file": None, "scene_error": "saveScene returned false"}
     except Exception as e:
         return {"scene_file": None, "scene_error": repr(e)}
+
+def check_task(check_manager, task_id):
+    try:
+        run_check = runpy.run_path(str(check_manager))["run_check"]
+        return run_check(task_id)
+    except Exception as e:
+        return {"passed": None, "checker_error": repr(e)}
 
 def run():
     # RESULT is sent back to the runner via __execResult, so turn worker
