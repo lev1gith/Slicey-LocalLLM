@@ -30,6 +30,8 @@ def main(model, path, task_ids=None, repeats=1):
         task["prompt"] = task["prompt"].replace("{TEST_FILES}", str(TEST_FILES))
 
     run_id, run_dir = new_run_dir()
+    scenes_dir = run_dir / "outputs" # worker saves each task's scene here as .mrb
+    scenes_dir.mkdir(exist_ok=True)
     print(f"Run {run_id} -> {run_dir}", flush=True)
 
     for repeat in range(1, repeats + 1):
@@ -42,10 +44,12 @@ def main(model, path, task_ids=None, repeats=1):
             # body of POST
             # Slicer's /slicer/exec returns the value of __execResult as JSON
             # (printed output is not returned), so pass the worker's RESULT there
+            scene_file = scenes_dir / f"task{task['id']}_rep{repeat}_outp.mrb"
             code = (
                 "import os, runpy\n"
                 f"os.environ['SLICER_BENCH_TASK_JSON'] = {json.dumps(task)!r}\n"
                 f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
+                f"os.environ['SLICER_BENCH_SCENE_FILE'] = {str(scene_file)!r}\n"
                 f"__execResult = runpy.run_path({str(Worker)!r}, run_name='__main__')['RESULT']\n"
             )
             start = time.perf_counter()
