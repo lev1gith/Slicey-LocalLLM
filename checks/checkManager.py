@@ -4,6 +4,7 @@ import slicer
 
 CHECKS_DIR = Path(__file__).resolve().parent
 CHECK_FILES = ["checkLoad.py"] # checker files
+TEST_FILES = CHECKS_DIR / "test_files"
 
 DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
                 "vtkMRMLModelNode", "vtkMRMLMarkupsNode"]
@@ -12,6 +13,10 @@ DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
 class CheckContext:
     def __init__(self):
         self.failures = []
+        self.test_files = str(TEST_FILES)
+
+    def path(self, name):
+        return f"{self.test_files}/{name}"
 
     def expect(self, cond, msg):
         if not cond:
