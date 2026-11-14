@@ -39,8 +39,7 @@ def main():
     # slices sends the model request and processes the response async
     timeout = 150
     loop = qt.QEventLoop()
-    finished = {"value": False, "timed_out": False, "errors": [],
-        "session": None}
+    finished = {"value": False, "timed_out": False, "errors": []}
 
     timer = qt.QTimer()
     timer.setSingleShot(True)
@@ -66,9 +65,6 @@ def main():
         if event == "turn_finished":
             finished["value"] = True
             loop.quit()
-        # get token usage when "usage_updated" emitted
-        if event == "usage_updated":
-            finished["session"] = payload["session"]
 
     start = time.perf_counter()
     timer.start(timeout * 1000)
@@ -104,7 +100,12 @@ def main():
             result["passed"] = None
             result["checker_error"] = repr(e)
     result["llm_s"] = round(llm_s, 2)
-    result["session_usage"] = finished["session"]
+    result["session_usage"] = {
+            "inputTokens": logic.sessionInputTokens,
+            "outputTokens": logic.sessionOutputTokens,
+            "costUsd": logic.sessionCostUsd,
+            "costEstimateIncomplete": logic.sessionCostEstimateIncomplete,
+        }
     if finished["errors"]:
         result["errors"] = finished["errors"]
 
