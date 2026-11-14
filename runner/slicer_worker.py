@@ -86,7 +86,7 @@ def main():
         while logic._busy and time.perf_counter() < deadline:
             slicer.app.processEvents()
             time.sleep(0.05)
-        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy, 
+        result = {"outcome": "timeout", "reason": f"no turn finished within {timeout} s", "cancel_clean": not logic._busy,
                   "passed": False}
     elif finished["errors"]:
         result = {"outcome": "slicey_error", "reason": finished["errors"][-1], "passed": False}
@@ -102,8 +102,18 @@ def main():
     if finished["errors"]:
         result["errors"] = finished["errors"]
 
+    scene_file = os.environ.get("SLICER_BENCH_SCENE_FILE")
+    if scene_file:
+        result.update(save_scene(scene_file))
     return result
 
+def save_scene(path):
+    try:
+        if slicer.util.saveScene(path):
+            return {"scene_file": f"outputs/{Path(path).name}"}
+        return {"scene_file": None, "scene_error": "saveScene returned false"}
+    except Exception as e:
+        return {"scene_file": None, "scene_error": repr(e)}
 
 def run():
     # RESULT is sent back to the runner via __execResult, so turn worker
