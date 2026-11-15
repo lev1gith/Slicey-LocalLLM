@@ -4,7 +4,7 @@ from pathlib import Path
 import slicer
 
 CHECKS_DIR = Path(__file__).resolve().parent
-CHECK_FILES = ["checkLoad.py", "checkMeasure.py", "checkView.py"] # checker files
+CHECK_FILES = ["checkLoad.py", "checkMeasure.py", "checkView.py", "checkExport.py"] # checker files
 TEST_FILES = CHECKS_DIR / "test_files"
 
 DATA_CLASSES = ["vtkMRMLScalarVolumeNode", "vtkMRMLSegmentationNode",
