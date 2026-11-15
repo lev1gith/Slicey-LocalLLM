@@ -5,8 +5,11 @@ import json
 
 # convert .md task list to JSON
 def md_to_json(md_path, json_path=None):
+    md_path = Path(md_path)
+    json_path = Path(json_path) if json_path else md_path.with_suffix(".json")
+    if json_path.resolve() == md_path.resolve():
+        raise ValueError(f"refusing to overwrite the source file {md_path}")
     tasks = rb.parse_md(md_path)
-    json_path = Path(json_path) if json_path else Path(md_path)
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(tasks, f, indent=4, ensure_ascii=False)
     return json_path
