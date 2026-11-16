@@ -76,7 +76,7 @@ Slicey-LocalLLM/
    - clears the scene;
    - empties `outputs/`;
    - switches to a new, empty DICOM database. Your own database is reopened when the task ends;
-   - sets Slicey's shared folders to just `checks/test_files`, read-only. Slicey lists the shared folders in its system prompt, so every model gets the same prompt. Your own list is put back when the task ends;
+   - sets Slicey's shared folders to `checks/test_files/outputs` (read-write) and `checks/test_files` (read-only). Slicey lists the shared folders in its system prompt, so every model gets the same prompt. `outputs/` has to be writable: when the export path was in a read-only folder, Opus refused to save there. Your own list is put back when the task ends;
    - resets Slicey's conversation and its session token counter;
    - selects the model;
    - sends the prompt through `logic.sendUserMessage`.
