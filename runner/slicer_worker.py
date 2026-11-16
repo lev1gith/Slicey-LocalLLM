@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 import runpy
 import shutil
+import tempfile
 
 def main():
     # load env variables
@@ -155,7 +156,16 @@ def run():
     # RESULT is sent back to the runner via __execResult, so turn worker
     # exceptions (e.g. model not listed) into a record instead of crashing
     try:
-        return main()
+        # each task gets its own empty DICOM database, so series imported by an
+        # earlier task or model can't help or confuse this one. It stays open
+        # through the check, and the user's own database is restored afterwards
+        from DICOMLib import DICOMUtils
+        db_dir = tempfile.mkdtemp(prefix="bench_dicom_", dir=slicer.app.temporaryPath)
+        try:
+            with DICOMUtils.TemporaryDICOMDatabase(db_dir):
+                return main()
+        finally:
+            shutil.rmtree(db_dir, ignore_errors=True)
     except Exception as e:
         return {"outcome": "worker_error", "reason": repr(e), "passed": None}
 
