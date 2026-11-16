@@ -165,10 +165,16 @@ def run():
         from SliceyLib import Settings as SliceySettings
         db_dir = tempfile.mkdtemp(prefix="bench_dicom_", dir=slicer.app.temporaryPath)
         # Slicey puts the shared folder list in the system prompt, so fix it for
-        # every task and model: only the test files, read-only. The user's own
-        # list is put back afterwards
+        # every task and model: the test files read-only, outputs/ read-write
+        # (export tasks write there, and a read-only folder makes careful models
+        # refuse to save). Slicey uses the first folder that contains a path,
+        # so outputs/ must come first. The user's own list is put back afterwards
         own_folders = SliceySettings.getSharedFolders()
-        SliceySettings.setSharedFolders([{"path": str(TEST_FILES), "writable": False}])
+        (TEST_FILES / "outputs").mkdir(parents=True, exist_ok=True)
+        SliceySettings.setSharedFolders([
+            {"path": str(TEST_FILES / "outputs"), "writable": True},
+            {"path": str(TEST_FILES), "writable": False},
+        ])
         try:
             with DICOMUtils.TemporaryDICOMDatabase(db_dir):
                 return main()
