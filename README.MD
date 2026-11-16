@@ -75,6 +75,8 @@ Slicey-LocalLLM/
 3. The worker prepares a clean starting point, then sends the prompt:
    - clears the scene;
    - empties `outputs/`;
+   - switches to a new, empty DICOM database. Your own database is reopened when the task ends;
+   - sets Slicey's shared folders to just `checks/test_files`, read-only. Slicey lists the shared folders in its system prompt, so every model gets the same prompt. Your own list is put back when the task ends;
    - resets Slicey's conversation and its session token counter;
    - selects the model;
    - sends the prompt through `logic.sendUserMessage`.
