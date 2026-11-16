@@ -8,6 +8,8 @@ import runpy
 import shutil
 import tempfile
 
+TEST_FILES = Path(__file__).resolve().parent.parent / "checks" / "test_files"
+
 def main():
     # load env variables
     task = json.loads(os.environ["SLICER_BENCH_TASK_JSON"])
@@ -160,11 +162,18 @@ def run():
         # earlier task or model can't help or confuse this one. It stays open
         # through the check, and the user's own database is restored afterwards
         from DICOMLib import DICOMUtils
+        from SliceyLib import Settings as SliceySettings
         db_dir = tempfile.mkdtemp(prefix="bench_dicom_", dir=slicer.app.temporaryPath)
+        # Slicey puts the shared folder list in the system prompt, so fix it for
+        # every task and model: only the test files, read-only. The user's own
+        # list is put back afterwards
+        own_folders = SliceySettings.getSharedFolders()
+        SliceySettings.setSharedFolders([{"path": str(TEST_FILES), "writable": False}])
         try:
             with DICOMUtils.TemporaryDICOMDatabase(db_dir):
                 return main()
         finally:
+            SliceySettings.setSharedFolders(own_folders)
             shutil.rmtree(db_dir, ignore_errors=True)
     except Exception as e:
         return {"outcome": "worker_error", "reason": repr(e), "passed": None}
