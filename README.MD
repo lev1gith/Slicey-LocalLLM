@@ -37,13 +37,13 @@ Alternatives considered:
 | `nvidia/nemotron-3-nano` | local | 4B | 2.8 GB | Q4_K_M | 1,048,576 |
 | `qwen3-5-4b` | local | 4.3B | 2.8 GB | Q4 | 262,144 |
 | `Hunyuan-4B-Instruct` | local | 4B | — | — | — |
-| Claude Opus 5.5 (`claude-opus-5-5`) | frontier baseline | — | API | — | — |
+| Claude Opus 5.5 (`claude-opus-5-5`) | frontier baseline | — | hosted | — | — |
 
 Notes:
 
 - All local models run with LM Studio's default inference settings.
 - 8B and 12B models were too resource-intensive for this machine, and 2B models couldn't do even the most basic tasks. That leaves the 3–4B range.
-- The frontier model runs through Slicey's `claude-api` backend, not LM Studio.
+- The frontier model runs through Slicey's Claude Code backend, not LM Studio. It's selected as `Opus 5.5` in Slicey's model list, and it runs on a Claude Code subscription, so there's no per-token bill.
 
 ## Repository structure
 
@@ -124,8 +124,8 @@ Each line of `results.jsonl` is one task attempt:
 `session_usage` comes from Slicey's session counters, which are reset at the start of every task, so the numbers cover that task only. They're read after the turn ends, and for a timeout after it has been cancelled.
 
 - **Local models** (agent backend through LM Studio): Slicey counts tokens only when the agent reports the end of a turn. A cancelled turn still reports its usage, so timed-out tasks have real counts too.
-- **Claude Opus** (`claude-api` backend): tokens are counted after every API request.
-- **Cost:** `costUsd` is `0` for local models, because they aren't billed per token. It's only meaningful for the Opus baseline.
+- **Claude Opus** (Claude Code backend): Slicey records the token counts that Claude Code reports.
+- **Cost:** `costUsd` is `0` for every model. Local models aren't billed per token, and Opus runs on a Claude Code subscription. To compare costs, estimate them from `inputTokens` and `outputTokens` and the API price.
 - **Harness errors** (`request_error`, `code_error`, `worker_error`) have no `session_usage` field, because no model ran.
 
 ## Running the benchmark
@@ -134,7 +134,8 @@ Each line of `results.jsonl` is one task attempt:
 
 1. **3D Slicer 5.13** with the **Slicey** extension installed.
 2. **Slicer's Web Server module** running on port **2016**, with the Slicer API (`/slicer/exec`) enabled.
-3. **LM Studio** with its local server running and the model loaded. The model name must match the one in Slicey's model list.
+3. **For the local models:** LM Studio with its local server running and the model loaded. The model name must match the one in Slicey's model list.
+   **For the Opus baseline:** Slicey connected to Claude Code, so `Opus 5.5` appears in Slicey's model list.
 4. **Python 3** with `requests` (`pip install requests`) for the runner. The runner uses your normal Python, not Slicer's.
 
 Check that Slicer's exec endpoint is reachable:
@@ -150,6 +151,7 @@ curl -X POST http://localhost:2016/slicer/exec --data '__execResult = {"hello": 
 python runner/run_benchmark.py                          # all tasks, default model
 python runner/run_benchmark.py --tasks 01-08            # only tasks 01 to 08
 python runner/run_benchmark.py --model nemotron-3-nano --tasks 01-08,11 --repeats 3
+python runner/run_benchmark.py --model "Opus 5.5" --tasks 01-40   # frontier baseline
 python runner/run_benchmark.py --help
 ```
 
