@@ -16,8 +16,9 @@ from vtk.util import numpy_support
 # back and compare it with the fixture it came from. Files are read into a
 # temporary scene (or without MRML at all), never into slicer.mrmlScene:
 # the worker saves the scene as .mrb after the check, and loading files here
-# would change what gets saved. The scene's own nodes are not used either,
-# because saving a node points its storage node at the new file.
+# would change what gets saved. The scene's own nodes are not used for the
+# content either, because saving a node points its storage node at the new
+# file (task 39 only checks that the node exists).
 
 
 # --- helpers -----------------------------------------------------------------
@@ -259,6 +260,20 @@ def check_38(ctx):
 
 # 39 — Export markups to JSON
 def check_39(ctx):
+    # the markups must be loaded into Slicer and saved from there, not written
+    # as JSON by hand. Saving repoints the node's storage at the new file, so
+    # accept a node whose file is either the fixture or the export
+    sources = {os.path.realpath(ctx.path(f))
+               for f in ("fiducials.mrk.json", "outputs/fiducials_export.mrk.json")}
+    nodes = []
+    for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+        storage = n.GetStorageNode()
+        name = storage.GetFileName() if storage else None
+        if name and os.path.realpath(name) in sources:
+            nodes.append(n)
+    ctx.expect(len(nodes) == 1,
+               f"expected 1 markups node loaded from fiducials.mrk.json, found {len(nodes)}")
+
     path = output_file(ctx, "fiducials_export.mrk.json")
     if path is None:
         return
