@@ -18,7 +18,7 @@ from vtk.util import numpy_support
 # the worker saves the scene as .mrb after the check, and loading files here
 # would change what gets saved. The scene's own nodes are not used for the
 # content either, because saving a node points its storage node at the new
-# file (task 39 only checks that the node exists).
+# file (tasks 36, 37 and 39 only check that the node exists).
 
 
 # --- helpers -----------------------------------------------------------------
@@ -38,6 +38,20 @@ def output_file(ctx, name):
     if not ctx.expect(os.path.isfile(path), f"no file at outputs/{name}"):
         return None
     return path
+
+
+def loaded_and_saved(ctx, cls, fixture, export):
+    # the node must be loaded into Slicer and saved from there, not made by
+    # copying or writing the file by hand. Saving repoints the node's storage
+    # at the new file, so accept a node whose file is the fixture or the export
+    sources = {os.path.realpath(ctx.path(f)) for f in (fixture, f"outputs/{export}")}
+    nodes = []
+    for n in slicer.util.getNodesByClass(cls):
+        storage = n.GetStorageNode()
+        name = storage.GetFileName() if storage else None
+        if name and os.path.realpath(name) in sources:
+            nodes.append(n)
+    ctx.expect(len(nodes) == 1, f"expected 1 {cls} loaded from {fixture}, found {len(nodes)}")
 
 
 def volume_info(path):
@@ -223,6 +237,7 @@ def check_35(ctx):
 
 # 36 — Export a volume to NRRD
 def check_36(ctx):
+    loaded_and_saved(ctx, "vtkMRMLScalarVolumeNode", "benchmark_ct.nrrd", "benchmark_ct_export.nrrd")
     path = output_file(ctx, "benchmark_ct_export.nrrd")
     if path is not None:
         check_volume(ctx, path, "benchmark_ct.nrrd", "benchmark_ct_export.nrrd")
@@ -230,6 +245,8 @@ def check_36(ctx):
 
 # 37 — Export a segmentation to SEG.NRRD
 def check_37(ctx):
+    loaded_and_saved(ctx, "vtkMRMLSegmentationNode", "islands.seg.nrrd",
+                     "island_segmentation_export.seg.nrrd")
     path = output_file(ctx, "island_segmentation_export.seg.nrrd")
     if path is not None:
         check_segmentation(ctx, path, "islands.seg.nrrd", "island_segmentation_export.seg.nrrd")
@@ -260,20 +277,8 @@ def check_38(ctx):
 
 # 39 — Export markups to JSON
 def check_39(ctx):
-    # the markups must be loaded into Slicer and saved from there, not written
-    # as JSON by hand. Saving repoints the node's storage at the new file, so
-    # accept a node whose file is either the fixture or the export
-    sources = {os.path.realpath(ctx.path(f))
-               for f in ("fiducials.mrk.json", "outputs/fiducials_export.mrk.json")}
-    nodes = []
-    for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
-        storage = n.GetStorageNode()
-        name = storage.GetFileName() if storage else None
-        if name and os.path.realpath(name) in sources:
-            nodes.append(n)
-    ctx.expect(len(nodes) == 1,
-               f"expected 1 markups node loaded from fiducials.mrk.json, found {len(nodes)}")
-
+    loaded_and_saved(ctx, "vtkMRMLMarkupsFiducialNode", "fiducials.mrk.json",
+                     "fiducials_export.mrk.json")
     path = output_file(ctx, "fiducials_export.mrk.json")
     if path is None:
         return
