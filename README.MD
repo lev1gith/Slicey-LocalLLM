@@ -36,13 +36,15 @@ Alternatives considered:
 | `mistralai/Ministral-3` | local | 3B | 3.0 GB | Q4_K_M | 262,144 |
 | `nvidia/nemotron-3-nano` | local | 4B | 2.8 GB | Q4_K_M | 1,048,576 |
 | `qwen3-5-4b` | local | 4.3B | 2.8 GB | Q4 | 262,144 |
-| `Hunyuan-4B-Instruct` | local | 4B | — | — | — |
+| `Llama-3.2-3B-Instruct` | local | 3.2B | ~2.0 GB | Q4_K_M | 131,072 |
 | Claude Opus 5.5 (`claude-opus-5-5`) | frontier baseline | — | hosted | — | — |
 
 Notes:
 
 - All local models run with LM Studio's default inference settings.
 - 8B and 12B models were too resource-intensive for this machine, and 2B models couldn't do even the most basic tasks. That leaves the 3–4B range.
+- Llama 3.2 3B was trained partly on the outputs of Llama 3.1 8B and 70B (distillation). It's included as a small model that learned from a much larger one, and it adds a fourth model family (Mistral, NVIDIA, Qwen, Meta).
+- The local models run through Slicey's `server` backend: Claude Code pointed at LM Studio's Anthropic-compatible API. So they get the same agent loop, tools and system prompt as Opus. Slicey asks for reasoning, so models that support it (e.g. Nemotron) run with reasoning on.
 - The frontier model runs through Slicey's Claude Code backend, not LM Studio. It's selected as `Opus 5.5` in Slicey's model list, and it runs on a Claude Code subscription, so there's no per-token bill.
 
 ## Repository structure
