@@ -231,3 +231,66 @@ This is how the library is meant to keep growing in use:
 5. Add the skill to the library, and run the validation tasks once to make sure nothing regressed.
 
 Count the frontier calls per task. That's the cost metric: as the library grows, it should fall toward zero.
+
+### Code structure (planned)
+
+Slicey has a **Custom instructions** setting, which it appends to the system prompt. The worker puts the skills there for each task, the same way it sets the shared folders. So Phase 2 doesn't need any changes to Slicey.
+
+```
+Slicey-LocalLLM/
+├── runner/
+│   ├── run_benchmark.py   # + --skills, --split
+│   └── slicer_worker.py   # + sets skills as custom instr.
+├── skills/
+│   ├── splits.json        # frozen task split
+│   ├── library/           # one .md per skill
+│   │   └── save-node.md
+│   └── prompts/           # frontier prompts per step
+│       ├── evaluate.md
+│       ├── draft.md
+│       ├── rewrite.md
+│       └── edit.md
+└── pipeline/
+    ├── split.py           # Step 1 setup
+    ├── library.py         # load, render, token count
+    ├── frontier.py        # calls claude -p
+    ├── lint.py            # leakage lint
+    ├── build.py           # Step 1
+    ├── refine.py          # Step 2 loop
+    ├── gate.py            # keep or revert
+    ├── evaluate.py        # Step 3
+    ├── metrics.py         # pass rates, spread, etc.
+    └── escalate.py        # Step 4 prototype
+```
+
+**Runner changes**
+
+| File | Change |
+|---|---|
+| `run_benchmark.py` | `--skills <library path \| none>` picks the library for the run. `--split train\|val\|test` runs only that split's tasks. Every result records the library version and its token count. |
+| `slicer_worker.py` | Puts the rendered library into Slicey's custom instructions before the prompt, and restores your own instructions afterwards. |
+
+**`skills/`: data**
+
+| Path | Contents |
+|---|---|
+| `splits.json` | Which task ids are in training, validation and test. Written once by `split.py` and never changed afterwards. |
+| `library/` | The skills, one Markdown file each. A short header gives the `name`, a one-line `description`, the `category` and the training tasks it came from (`sources`). The body is the recipe itself. The library is versioned with git tags (`skills-v1`, `skills-v2`, …), so any result can be traced back to the exact library it ran with. |
+| `prompts/` | The instructions given to the frontier model at each step: evaluate the chats, draft skills, rewrite them in general terms, edit them in refinement. Keeping them as files means they're versioned and can be reviewed like the skills. |
+
+**`pipeline/`: the steps**
+
+| File | What it does |
+|---|---|
+| `split.py` | Makes the stratified 60/20/20 split by task id and category, and writes `splits.json`. |
+| `library.py` | Loads and saves skill files. Renders the library into the text that goes into the system prompt, and reports its token count and git version. Small models degrade with long prompts, so the token count is recorded with every result. |
+| `frontier.py` | The only place that calls the frontier model. It uses `claude -p` (Claude Code without the interactive session), so the calls run on the Claude Code subscription like the Opus baseline. Switching to the API would only change this file. |
+| `lint.py` | The leakage lint. It builds the forbidden list automatically: names and numbers from `task_prompts.md`, file names in `checks/test_files`, and node and segment names from the checks. A skill containing any of them is rejected, and the result says which string matched. A small allowlist covers general values, such as `-1000` for air in CT. |
+| `build.py` | Step 1. Collects the training chats and results, then runs: evaluate, draft, rewrite, lint. The skills that pass are saved as v1. It reads `splits.json`, so it can't pass validation or test chats to the frontier model by accident. |
+| `refine.py` | The Step 2 loop. Each round: run the benchmark on training and validation tasks, have the frontier model edit the skills from the training chats, rewrite and lint them, run again, and ask `gate.py` whether to keep the edits. A kept round is committed and tagged as the next version. A rejected one is reverted. Stops when the validation score stops improving. |
+| `gate.py` | Compares two runs task by task. Returns keep or revert, and lists any task that passed before and now fails. |
+| `evaluate.py` | Step 3. Runs every model on the test split and the new tasks, with no skills, with generic docs and with the frozen library, each at least 3 times. |
+| `metrics.py` | Summarises results: pass rate as average and spread over repeats, tool-call success rate, faked outputs, frontier calls per task. |
+| `escalate.py` | A prototype of Step 4 in the harness: when a task fails, the frontier model writes a skill, then the rewrite, lint, re-run with the local model, and a validation run. A real version has to work inside Slicey during the turn, which would need changes to Slicey. |
+
+To start with, the whole library goes into the prompt. If it gets too long for the small models, the alternative is retrieval: the library sits in a read-only shared folder, the prompt carries only an index of skill names and descriptions, and the model opens the skills it needs with `read_text_file`.
