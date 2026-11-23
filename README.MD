@@ -66,7 +66,8 @@ Slicey-LocalLLM/
 │   └── json_converter.py  # converts task_prompts.md to JSON
 ├── docs/
 │   ├── workplan.md        # setup, model selection and benchmark plan
-│   └── tasks.md           # the candidate tasks and their intended checks
+│   ├── tasks.md           # the candidate tasks and their intended checks
+│   └── images/            # diagrams used in this README
 └── results/               # one folder per run (see "Run output" below)
 ```
 
@@ -176,3 +177,57 @@ run_check = runpy.run_path("<repo>/checks/checkManager.py")["run_check"]
 slicer.mrmlScene.Clear(0)
 print(run_check("01"))   # empty scene -> passed: False
 ```
+
+## Phase 2: Skills library (planned)
+
+The baselines show what local models get wrong. Phase 2 tries to fix that with a **skills library**: short, reusable instructions written by the frontier model and given to the local models. A skill is a recipe for using Slicer, for example "save a node with `slicer.util.saveNode(node, path)` and check the return value". It isn't the answer to a specific task.
+
+The goal is a library that lets local models solve most tasks on their own. When they meet something new, they call the frontier model once, and the answer becomes a new skill. The main risk is **overfitting**: skills that only work on the benchmark tasks they were written from. Most of the design below exists to prevent and detect that.
+
+![Skills library pipeline](docs/images/skills_library.png)
+
+### Step 1: Initial library build
+
+- **Split the tasks:**
+  - training 60%, validation 20%, test 20%;
+  - split by task id, so every run of a task stays in the same set;
+  - stratify, so each set contains every category (load, segment, export, …).
+
+  The split is fixed once and never redrawn. Redrawing would let every task gradually shape the library.
+- **Evaluate the training chats.** The frontier model reads the local models' failed chats next to Opus's successful ones for the same tasks. It sees where the local models went wrong (made-up APIs, path typos, faked outputs) and how the task should be done. It doesn't see the check code.
+- **Draft skills** from those findings.
+- **Generalization rewrite.** The frontier model rewrites each draft so it describes the general technique, not the task it came from. For example, "threshold Bone 300–800 in Benchmark CT" becomes "create a segment from a threshold range with …".
+- **Leakage lint.** An automatic check that rejects any skill containing a fixture file name, node or segment name, or numeric value from the task prompts. It catches what the rewrite missed, and it runs after the rewrite because the rewrite could reintroduce such details. A rejected skill goes back to drafting.
+- The skills that pass make up **library v1**.
+
+### Step 2: Refinement
+
+Each round:
+1. Run the local models with the current library on the training and validation tasks.
+2. The frontier model reads **only the training chats** and edits the skills. Validation tasks contribute their scores, never their chats. That way the validation score stays an honest measure of generalization.
+3. Rewrite and lint the edited skills, as in Step 1.
+4. **Gate:** keep the round's edits only if the validation score goes up and no task that passed before now fails. Otherwise revert to the previous version. The round's edits are judged together, because skills affect each other.
+
+Each kept round is a new library version (v1, v2, …). Every run records which version it used. Stop when the validation score stops improving.
+
+### Step 3: Evaluation
+
+- Freeze the library. From here on, nothing changes it.
+- Run every model on:
+  - the test split, which hasn't influenced the library at all;
+  - **new tasks written after the freeze**, so they can't have been designed around the skills.
+- Run each task at least 3 times. Local models vary a lot between runs, so report the average and the spread, not a single result.
+- Compare against the same runs **without skills**, and preferably also with generic Slicer documentation of the same length. That shows whether the skills help, or just any extra context does.
+- Report results separately for models whose chats were used to build the library and for models that weren't. The second group shows whether the skills transfer to other models.
+
+### Step 4: Unknown tasks
+
+This is how the library is meant to keep growing in use:
+
+1. The local model tries the task with the library.
+2. If it fails, it calls the frontier model to solve it. "Fails" means one of: no matching skill, the model gives up, or N failed tool calls in a row.
+3. The frontier model writes a new skill (or edits an existing one). The skill goes through the generalization rewrite and the lint.
+4. **Verify the skill.** The **local model** re-runs the task with the new skill. The frontier model passing the task isn't enough: the skill has to be usable by a small model. If it fails, the skill goes back to the frontier model. Benchmark tasks are verified by their check. Real tasks have no check, so verification is the user confirming, or the frontier model judging the final scene.
+5. Add the skill to the library, and run the validation tasks once to make sure nothing regressed.
+
+Count the frontier calls per task. That's the cost metric: as the library grows, it should fall toward zero.
