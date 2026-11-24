@@ -12,8 +12,7 @@ def load_library():
     skills = {}
     for path in sorted(SKILLS_PATH.glob("*.md")):
         text = path.read_text(encoding="utf-8")
-        skill_name = path.stem
-        skills[skill_name] = text
+        skills[path.stem] = parse_skill(path, text)  # path.stem = skill name
     return skills
 
 # helper function for load library, turns one file into a dict
@@ -44,3 +43,6 @@ def parse_skill(path, text):
     parsed_skill["name"] = path.stem
     parsed_skill["body"] = body.strip()
     return parsed_skill
+
+if __name__ == "__main__":
+    print(load_library())
