@@ -47,7 +47,7 @@ def parse_skill(path, text):
 # turn dict into one string for slicey's custom instruction
 def render(skills):
     skill_as_prompt = []
-    prompt_intro = "Skills for working in 3D Slicer. Use the ones that fits the task"
+    prompt_intro = "Skills for working in 3D Slicer. Use the ones that fit the task."
     if not skills:
         return ""
     for skill in skills.values():
@@ -57,6 +57,15 @@ def render(skills):
     skill_as_prompt.insert(0, prompt_intro)
     instruction = "\n\n".join(skill_as_prompt)
     return instruction
+
+
+def save_skill(skill):
+    path = SKILLS_PATH / f"{skill['name']}.md"
+    SKILLS_PATH.mkdir(parents=True, exist_ok=True)
+    sources = ", ".join(skill['sources'])
+    skill_text = f"---\ndescription: {skill['description']}\ncategory: {skill['category']}\nsources: {sources}\n---\n{skill['body']}\n"
+    path.write_text(skill_text, encoding="utf-8")
+    return path
 
 if __name__ == "__main__":
     print(render(load_library()))
