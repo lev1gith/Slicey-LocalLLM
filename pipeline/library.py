@@ -44,5 +44,19 @@ def parse_skill(path, text):
     parsed_skill["body"] = body.strip()
     return parsed_skill
 
+# turn dict into one string for slicey's custom instruction
+def render(skills):
+    skill_as_prompt = []
+    prompt_intro = "Skills for working in 3D Slicer. Use the ones that fits the task"
+    if not skills:
+        return ""
+    for skill in skills.values():
+        prompt = f"## {skill['name']}\n{skill['description']}\n\n{skill['body']}"
+        skill_as_prompt.append(prompt)
+
+    skill_as_prompt.insert(0, prompt_intro)
+    instruction = "\n\n".join(skill_as_prompt)
+    return instruction
+
 if __name__ == "__main__":
-    print(load_library())
+    print(render(load_library()))
