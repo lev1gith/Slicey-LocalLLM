@@ -7,8 +7,10 @@ from pathlib import Path
 import runpy
 import shutil
 import tempfile
+import sys
 
 TEST_FILES = Path(__file__).resolve().parent.parent / "checks" / "test_files"
+PIPELINE_DIR = Path(__file__).resolve().parent.parent / "pipeline"
 
 def main():
     # load env variables
@@ -164,21 +166,35 @@ def run():
         from DICOMLib import DICOMUtils
         from SliceyLib import Settings as SliceySettings
         db_dir = tempfile.mkdtemp(prefix="bench_dicom_", dir=slicer.app.temporaryPath)
+
         # Slicey puts the shared folder list in the system prompt, so fix it for
         # every task and model: the test files read-only, outputs/ read-write
         # (export tasks write there, and a read-only folder makes careful models
         # refuse to save). Slicey uses the first folder that contains a path,
         # so outputs/ must come first. The user's own list is put back afterwards
         own_folders = SliceySettings.getSharedFolders()
+        own_text = SliceySettings.getCustomSystemPromptText()
+        skills_folder = os.environ.get("SLICER_BENCH_SKILLS", "")
+        skills_text = ""
+        if skills_folder:
+            if str(PIPELINE_DIR) not in sys.path:
+                sys.path.insert(0, str(PIPELINE_DIR))
+            from library import load_library, render
+            skills_text = render(load_library(skills_folder))
+
         (TEST_FILES / "outputs").mkdir(parents=True, exist_ok=True)
         SliceySettings.setSharedFolders([
             {"path": str(TEST_FILES / "outputs"), "writable": True},
             {"path": str(TEST_FILES), "writable": False},
         ])
         try:
+            SliceySettings.setCustomSystemPromptText(skills_text)
             with DICOMUtils.TemporaryDICOMDatabase(db_dir):
-                return main()
+                result = main()
+                result["skills_chars"] = len(SliceySettings.getCustomSystemPromptText())
+                return result
         finally:
+            SliceySettings.setCustomSystemPromptText(own_text)
             SliceySettings.setSharedFolders(own_folders)
             shutil.rmtree(db_dir, ignore_errors=True)
     except Exception as e:
