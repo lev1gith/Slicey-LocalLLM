@@ -8,9 +8,12 @@ SKILLS_PATH = Path(__file__).resolve().parent.parent / "skills" / "library"
 
 
 # read all skill files and return them in a fixed order
-def load_library():
+def load_library(folder=SKILLS_PATH):
     skills = {}
-    for path in sorted(SKILLS_PATH.glob("*.md")):
+    folder = Path(folder)
+    if (not folder.is_dir()):
+        raise ValueError(f"Error skills not found: {folder}")
+    for path in sorted(folder.glob("*.md")):
         text = path.read_text(encoding="utf-8")
         skills[path.stem] = parse_skill(path, text)  # path.stem = skill name
     return skills
