@@ -41,7 +41,7 @@ Alternatives considered:
 
 Notes:
 
-- All local models run with LM Studio's default inference settings.
+- All local models run with a context length of 32,768 tokens. The other inference settings are LM Studio's defaults.
 - 8B and 12B models were too resource-intensive for this machine, and 2B models couldn't do even the most basic tasks. That leaves the 3–4B range.
 - Llama 3.2 3B was trained partly on the outputs of Llama 3.1 8B and 70B (distillation). It's included as a small model that learned from a much larger one, and it adds a fourth model family (Mistral, NVIDIA, Qwen, Meta).
 - The local models run through Slicey's `server` backend: Claude Code pointed at LM Studio's Anthropic-compatible API. So they get the same agent loop, tools and system prompt as Opus. Slicey asks for reasoning, so models that support it (e.g. Nemotron) run with reasoning on.
