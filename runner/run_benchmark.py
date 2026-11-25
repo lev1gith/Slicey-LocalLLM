@@ -11,7 +11,7 @@ TASKS_DIR = RUNNER_DIR.parent / "tasks"
 TEST_FILES = RUNNER_DIR.parent / "checks" / "test_files"
 SPLITS_FILE = RUNNER_DIR.parent / "skills" / "splits.json"
 
-def main(model, path, task_ids=None, repeats=1):
+def main(model, path, task_ids=None, repeats=1, skills=""):
     path = TASKS_DIR / path
     if path.suffix == ".json":
         tasks = load_json_tasks(path)
@@ -47,6 +47,7 @@ def main(model, path, task_ids=None, repeats=1):
                 f"os.environ['SLICER_BENCH_TASK_JSON'] = {json.dumps(task)!r}\n"
                 f"os.environ['SLICER_BENCH_MODEL'] = {model!r}\n"
                 f"os.environ['SLICER_BENCH_SCENE_FILE'] = {str(scene_file)!r}\n"
+                f"os.environ['SLICER_BENCH_SKILLS'] = {skills!r}\n"
                 f"__execResult = runpy.run_path({str(Worker)!r}, run_name='__main__')['RESULT']\n"
             )
             start = time.perf_counter()
@@ -79,6 +80,7 @@ def main(model, path, task_ids=None, repeats=1):
             record["task_id"] = task["id"]
             record["wall_s"] = wall_s
             record["repeat"] = repeat
+            record["skills"] = skills
             record["run_id"] = run_id
             record["model"] = model
             record["timestamp"] = datetime.now().isoformat(timespec="seconds")
@@ -167,7 +169,8 @@ if __name__ == "__main__":
     p.add_argument("--model", default="qwen3-5-4b", help="model name as shown in Slicey")
     p.add_argument("--file", default="task_prompts.md", help="task file in tasks/")
     p.add_argument("--tasks", help='task ids, e.g. "01-08,11" (default: all)')
-    p.add_argument("--split", choices=["train", "val", "test"], help="...")
+    p.add_argument("--split", choices=["train", "val", "test"], help="run only split x from skills/splits.json")
+    p.add_argument("--skills", help="folder with the skills to use (default: no skills), eg skills/library")
     p.add_argument("--repeats", type=int, default=1, help="run each task N times")
     args = p.parse_args()
     if args.tasks and args.split:
@@ -179,6 +182,13 @@ if __name__ == "__main__":
         selected_ids = load_split(args.split)
     else:
         selected_ids = None
+
+    selected_skills = ""
+    if args.skills:
+        folder = Path(args.skills).resolve()
+        if (not folder.is_dir()):
+            p.error(f"Folder doesn't exist {folder}")
+        selected_skills = str(folder)
     main(model=args.model, path=args.file,
          task_ids = selected_ids,
-         repeats=args.repeats)
+         repeats=args.repeats, skills=selected_skills)
