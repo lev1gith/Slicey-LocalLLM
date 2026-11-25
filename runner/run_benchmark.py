@@ -9,7 +9,7 @@ Worker = RUNNER_DIR / "slicer_worker.py"
 Result_dir = RUNNER_DIR.parent / "results"
 TASKS_DIR = RUNNER_DIR.parent / "tasks"
 TEST_FILES = RUNNER_DIR.parent / "checks" / "test_files"
-
+SPLITS_FILE = RUNNER_DIR.parent / "skills" / "splits.json"
 
 def main(model, path, task_ids=None, repeats=1):
     path = TASKS_DIR / path
@@ -154,14 +154,31 @@ def parse_task_ids(spec):
     return ids
 
 
+def load_split(name):
+    if not SPLITS_FILE.exists():
+        raise ValueError("Error, splits file doesn't exist. Run pipeline/split.py to create it")
+    tasks = Path.read_text(SPLITS_FILE)
+    splits = json.loads(tasks)
+    return set(splits[name])
+
 if __name__ == "__main__":
     import argparse
     p = argparse.ArgumentParser(description="Run Slicey benchmark tasks")
     p.add_argument("--model", default="qwen3-5-4b", help="model name as shown in Slicey")
     p.add_argument("--file", default="task_prompts.md", help="task file in tasks/")
     p.add_argument("--tasks", help='task ids, e.g. "01-08,11" (default: all)')
+    p.add_argument("--split", choices=["train", "val", "test"], help="...")
     p.add_argument("--repeats", type=int, default=1, help="run each task N times")
     args = p.parse_args()
+    if args.tasks and args.split:
+        p.error("use either --tasks or --split, not both")
+
+    if args.tasks:
+        selected_ids = parse_task_ids(args.tasks)
+    elif args.split:
+        selected_ids = load_split(args.split)
+    else:
+        selected_ids = None
     main(model=args.model, path=args.file,
-         task_ids=parse_task_ids(args.tasks) if args.tasks else None,
+         task_ids = selected_ids,
          repeats=args.repeats)
