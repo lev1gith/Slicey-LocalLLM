@@ -191,6 +191,7 @@ def run():
             SliceySettings.setCustomSystemPromptText(skills_text)
             with DICOMUtils.TemporaryDICOMDatabase(db_dir):
                 result = main()
+                # save the length of the used skills, useful for checking if skills were actually set or not
                 result["skills_chars"] = len(SliceySettings.getCustomSystemPromptText())
                 return result
         finally:
