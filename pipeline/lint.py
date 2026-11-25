@@ -14,4 +14,7 @@ def check_sources(skill):
     pass
 
 def lint_skill(skill):
-    pass
+    problems = []
+    for check in (check_sources(skill)):
+        problems.extend(check(skill))
+    return problems
