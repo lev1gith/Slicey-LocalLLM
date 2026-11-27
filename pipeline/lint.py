@@ -44,7 +44,7 @@ def check_sources(skill):
 
 def lint_skill(skill):
     problems = []
-    for check in (check_sources, check_task_ids, check_file_names):
+    for check in (check_sources, check_task_ids, check_file_names, check_copied_phrases):
         problems.extend(check(skill))
     return problems
 
@@ -88,6 +88,41 @@ def check_file_names(skill):
             problems.append(f"mentions test file: {name}")
     for m in ABS_PATH.finditer(skill_text(skill)):
         problems.append(f"contains absolute path: {m.group()}")
+    return problems
+
+# a skill sharing this many consecutive words with a task prompt copies its wording
+PHRASE_LEN = 6
+TASK_PROMPTS = Path(__file__).resolve().parent.parent / "tasks" / "task_prompts.md"
+
+# "Load `{TEST_FILES}/MRHead.nrrd`" -> ["load", "test", "files", "mrhead", "nrrd"]
+def words(text):
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+# every run of n consecutive words, as tuples
+def ngrams(word_list, n=PHRASE_LEN):
+    return {tuple(word_list[i:i + n]) for i in range(len(word_list) - n + 1)}
+
+# {phrase: set of task ids whose prompt contains it}, from all tasks (not just train)
+def prompt_phrases():
+    runner_dir = str(Path(__file__).resolve().parent.parent / "runner")
+    if runner_dir not in sys.path:
+        sys.path.insert(0, runner_dir)
+    from run_benchmark import parse_md
+
+    phrases = {}
+    for task in parse_md(TASK_PROMPTS):
+        for gram in ngrams(words(task["prompt"])):
+            phrases.setdefault(gram, set()).add(task["id"])
+    return phrases
+
+# check that the skill doesn't copy PHRASE_LEN+ words in a row from any task prompt
+def check_copied_phrases(skill):
+    phrases = prompt_phrases()
+    problems = []
+    for gram in sorted(ngrams(words(skill_text(skill)))):
+        if gram in phrases:
+            ids = ", ".join(sorted(phrases[gram]))
+            problems.append(f"copies wording from task {ids}: '{' '.join(gram)}'")
     return problems
 
 
