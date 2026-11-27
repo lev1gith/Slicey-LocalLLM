@@ -4,6 +4,7 @@ from pathlib import Path
 from split import SPLITS_FILE
 from library import load_library
 import sys
+from functools import cache
 
 TEST_FILES = Path(__file__).resolve().parent.parent / "checks"/ "test_files"
 
@@ -44,7 +45,8 @@ def check_sources(skill):
 
 def lint_skill(skill):
     problems = []
-    for check in (check_sources, check_task_ids, check_file_names, check_copied_phrases):
+    for check in (check_sources, check_task_ids, check_file_names, check_copied_phrases,
+                  check_node_names, check_numbers):
         problems.extend(check(skill))
     return problems
 
@@ -102,15 +104,19 @@ def words(text):
 def ngrams(word_list, n=PHRASE_LEN):
     return {tuple(word_list[i:i + n]) for i in range(len(word_list) - n + 1)}
 
-# {phrase: set of task ids whose prompt contains it}, from all tasks (not just train)
-def prompt_phrases():
+# all task prompts (not just train), parsed once and reused by every check
+@cache
+def load_prompts():
     runner_dir = str(Path(__file__).resolve().parent.parent / "runner")
     if runner_dir not in sys.path:
         sys.path.insert(0, runner_dir)
     from run_benchmark import parse_md
+    return parse_md(TASK_PROMPTS)
 
+# {phrase: set of task ids whose prompt contains it}
+def prompt_phrases():
     phrases = {}
-    for task in parse_md(TASK_PROMPTS):
+    for task in load_prompts():
         for gram in ngrams(words(task["prompt"])):
             phrases.setdefault(gram, set()).add(task["id"])
     return phrases
@@ -123,6 +129,63 @@ def check_copied_phrases(skill):
         if gram in phrases:
             ids = ", ".join(sorted(phrases[gram]))
             problems.append(f"copies wording from task {ids}: '{' '.join(gram)}'")
+    return problems
+
+# backticked names in prompts that are ordinary Slicer vocabulary, not task-specific
+GENERIC_NAMES = {"sagittal", "bone", "air", "slicerlayoutfourupview"}
+
+# {name: set of task ids} for the node/segment names prompts put in backticks, e.g. `MRHead NRRD`
+# (paths and extensions are left to check_file_names)
+def prompt_names():
+    names = {}
+    for task in load_prompts():
+        for name in re.findall(r"`([^`]+)`", task["prompt"]):
+            if "{TEST_FILES}" in name or "/" in name or name.startswith("."):
+                continue
+            if name.lower() in GENERIC_NAMES:
+                continue
+            names.setdefault(name.lower(), set()).add(task["id"])
+    return names
+
+# check that the skill doesn't use the names a task asks for
+def check_node_names(skill):
+    text = skill_text(skill).lower()
+    problems = []
+    for name, ids in sorted(prompt_names().items()):
+        if re.search(r"\b" + re.escape(name) + r"\b", text):
+            problems.append(f"uses name from task {', '.join(sorted(ids))}: '{name}'")
+    return problems
+
+# a number on its own, not part of a word like "IM0001", "3D" or "vtk2"
+NUMBER = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?(?!\.?\w)")
+# integers this small show up everywhere (indices, axes, counts), so they're never flagged
+SMALL = 10
+
+def numbers(text):
+    found = set()
+    for m in NUMBER.finditer(text):
+        value = float(m.group())
+        if value.is_integer() and abs(value) <= SMALL:
+            continue
+        found.add(value)
+    return found
+
+# {number: set of task ids} for the distinctive numbers in prompts (thresholds, sizes, coordinates)
+def prompt_numbers():
+    nums = {}
+    for task in load_prompts():
+        for value in numbers(task["prompt"]):
+            nums.setdefault(value, set()).add(task["id"])
+    return nums
+
+# check that the skill doesn't hard-code a task's numbers
+def check_numbers(skill):
+    prompt_nums = prompt_numbers()
+    problems = []
+    for value in sorted(numbers(skill_text(skill))):
+        if value in prompt_nums:
+            shown = int(value) if value.is_integer() else value
+            problems.append(f"uses number from task {', '.join(sorted(prompt_nums[value]))}: {shown}")
     return problems
 
 
