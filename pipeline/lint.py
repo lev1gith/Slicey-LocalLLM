@@ -2,6 +2,8 @@ import json
 import re
 from pathlib import Path
 from split import SPLITS_FILE
+from library import load_library
+import sys
 
 TEST_FILES = Path(__file__).resolve().parent.parent / "checks"/ "test_files"
 
@@ -9,6 +11,22 @@ TEST_FILES = Path(__file__).resolve().parent.parent / "checks"/ "test_files"
 # decides if skill is general enough
 # takes one skill dict and returns a list of problems
 # empty list -> skill accepted
+
+def main():
+    failed = False
+    lib = load_library()
+    for skill in lib.values():
+        problems = lint_skill(skill)
+        if len(problems) == 0:
+            print(f"{skill['name']} OK")
+        else:
+            print(f"{skill['name']} Error")
+            for problem in problems:
+                print(f"    {problem}")
+            failed = True
+
+    if failed is True:
+        sys.exit(1)
 
 # check if every id in sources are in the training split
 def check_sources(skill):
@@ -71,3 +89,6 @@ def check_file_names(skill):
     for m in ABS_PATH.finditer(skill_text(skill)):
         problems.append(f"contains absolute path: {m.group()}")
     return problems
+
+
+if __name__ == "__main__": main()
