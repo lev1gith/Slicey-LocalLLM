@@ -26,6 +26,23 @@ def check_sources(skill):
 
 def lint_skill(skill):
     problems = []
-    for check in (check_sources,):
+    for check in (check_sources, check_task_ids):
         problems.extend(check(skill))
+    return problems
+
+# helper function: join name, description and body to 1 string
+def skill_text(skill):
+    skill_parts = [skill["name"], skill["description"], skill["body"]]
+    text = "\n".join(skill_parts)
+    return text
+
+# "task 34", "Task_07", "task34", "check_05", "check 12"; \b so "subtask" doesn't match
+TASK_ID = re.compile(r"\b(?:task|check)[\s_]?\d{1,2}\b", re.IGNORECASE)
+
+# check that the skill doesn't name a specific benchmark task
+def check_task_ids(skill):
+    text = skill_text(skill)
+    problems = []
+    for m in TASK_ID.finditer(text):
+        problems.append(f"mentions task id: {m.group()}")
     return problems
