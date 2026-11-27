@@ -26,7 +26,7 @@ def check_sources(skill):
 
 def lint_skill(skill):
     problems = []
-    for check in (check_sources, check_task_ids):
+    for check in (check_sources, check_task_ids, check_file_names):
         problems.extend(check(skill))
     return problems
 
@@ -45,4 +45,29 @@ def check_task_ids(skill):
     problems = []
     for m in TASK_ID.finditer(text):
         problems.append(f"mentions task id: {m.group()}")
+    return problems
+
+# absolute paths from this machine (or any user's home)
+ABS_PATH = re.compile(r"/(?:Users|home)/\S*")
+
+# names of the benchmark's test files and folders, lowercased
+# (outputs/ is written by the runs, README.md and hidden files like .DS_Store aren't test data)
+def test_file_names():
+    names = set()
+    for p in TEST_FILES.rglob("*"):
+        rel = p.relative_to(TEST_FILES)
+        if rel.parts[0] == "outputs" or p.name == "README.md" or p.name.startswith("."):
+            continue
+        names.add(p.name.lower())
+    return names
+
+# check that the skill doesn't name the test files or contain absolute paths
+def check_file_names(skill):
+    text = skill_text(skill).lower()
+    problems = []
+    for name in sorted(test_file_names()):
+        if re.search(r"\b" + re.escape(name) + r"\b", text):
+            problems.append(f"mentions test file: {name}")
+    for m in ABS_PATH.finditer(skill_text(skill)):
+        problems.append(f"contains absolute path: {m.group()}")
     return problems
